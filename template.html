@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Perfect Order — A Collector's Register</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400;0,6..96,700;0,6..96,900;1,6..96,400&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper:        #ede4cc;
+  --paper-2:      #e2d7b7;
+  --paper-edge:   #d4c79d;
+  --ink:          #18242e;
+  --ink-soft:     #45524a;
+  --rule:         #1c2a25;
+  --oxblood:      #6e1f1f;
+  --oxblood-2:    #8c2a2a;
+  --gold:         #a07b3c;
+  --moss:         #4a5a3a;
+  --highlight:    #fcf6e3;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+/* Paper texture via layered SVG noise */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='4'/><feColorMatrix values='0 0 0 0 0.1  0 0 0 0 0.1  0 0 0 0 0.05  0 0 0 0.13 0'/></filter><rect width='240' height='240' filter='url(%23n)'/></svg>");
+  mix-blend-mode: multiply;
+}
+body::after {
+  content: "";
+  position: fixed; inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% -10%, rgba(255,250,228,0.6), transparent 60%),
+    radial-gradient(ellipse 100% 60% at 20% 100%, rgba(70,40,10,0.08), transparent 60%);
+}
+
+.page { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 32px 28px 80px; }
+
+/* ─── MASTHEAD ─────────────────────────────────────────────── */
+.masthead {
+  border-top: 3px double var(--rule);
+  border-bottom: 1px solid var(--rule);
+  padding: 22px 0 18px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 28px;
+}
+.masthead .left, .masthead .right {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.masthead .right { text-align: right; }
+.masthead .center { text-align: center; }
+.masthead h1 {
+  font-family: 'Bodoni Moda', serif;
+  font-weight: 900;
+  font-size: clamp(40px, 7vw, 78px);
+  letter-spacing: -0.01em;
+  margin: 0;
+  line-height: 0.95;
+  font-variant: small-caps;
+}
+.masthead .series-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--oxblood);
+  margin-bottom: 6px;
+}
+.masthead .subtitle {
+  font-family: 'Bodoni Moda', serif;
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+
+.ornament { display: block; margin: 14px auto 0; width: 220px; height: 16px; opacity: 0.7; }
+
+/* ─── LEDGER (stats) ─────────────────────────────────────────── */
+.ledger {
+  margin: 28px 0 20px;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr 1fr;
+  gap: 0;
+  border: 1px solid var(--rule);
+  background: var(--paper-2);
+  position: relative;
+}
+.ledger::before, .ledger::after {
+  content: "";
+  position: absolute; left: 8px; right: 8px; height: 1px; background: var(--rule); opacity: 0.4;
+}
+.ledger::before { top: 6px; }
+.ledger::after { bottom: 6px; }
+.ledger .col {
+  padding: 18px 22px;
+  border-right: 1px dashed var(--rule);
+  display: flex; flex-direction: column; justify-content: center;
+}
+.ledger .col:last-child { border-right: 0; }
+.ledger .label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 4px;
+}
+.ledger .value {
+  font-family: 'Bodoni Moda', serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+.ledger .sub {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink-soft);
+  margin-top: 4px;
+}
+
+/* Constellation progress: a grid of dots, lit dots = collected slots */
+.constellation {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, 7px);
+  gap: 3px;
+  margin-top: 8px;
+}
+.constellation .dot {
+  width: 7px; height: 7px;
+  background: var(--paper-edge);
+  border-radius: 50%;
+}
+.constellation .dot.lit { background: var(--oxblood); box-shadow: 0 0 6px rgba(110,31,31,0.5); }
+
+/* ─── FILTER BAR ─────────────────────────────────────────────── */
+.controls {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--paper);
+  margin: 0 -28px;
+  padding: 14px 28px;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  display: flex; flex-wrap: wrap; gap: 12px; align-items: center;
+}
+.controls::before {
+  content: "";
+  position: absolute; left: 0; right: 0; top: -1px; height: 1px;
+  background: var(--rule);
+  opacity: 0.4;
+}
+.search {
+  flex: 1; min-width: 200px;
+  display: flex; align-items: center; gap: 8px;
+  background: var(--highlight);
+  border: 1px solid var(--rule);
+  padding: 8px 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+}
+.search input {
+  border: 0; background: transparent; outline: none;
+  font-family: inherit; font-size: inherit; color: var(--ink);
+  flex: 1;
+}
+.search svg { flex: none; opacity: 0.5; }
+
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 7px 11px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  user-select: none;
+}
+.chip:hover { background: var(--paper-2); }
+.chip.active { background: var(--ink); color: var(--paper); }
+.chip.danger.active { background: var(--oxblood); }
+.chip .count { opacity: 0.6; margin-left: 4px; font-weight: 700; }
+
+/* ─── GRID OF CARDS ──────────────────────────────────────────── */
+.grid {
+  margin-top: 22px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 22px 18px;
+}
+
+.entry {
+  position: relative;
+  display: flex; flex-direction: column;
+}
+.plate {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  padding: 10px 10px 0;
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.entry:hover .plate {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px -8px rgba(0,0,0,0.25);
+}
+.plate-num {
+  position: absolute;
+  top: -10px; left: 10px;
+  background: var(--paper);
+  padding: 0 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: var(--ink-soft);
+}
+.plate-rarity {
+  position: absolute;
+  top: -10px; right: 10px;
+  background: var(--paper);
+  padding: 0 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--oxblood);
+}
+.img-wrap {
+  aspect-ratio: 245/342;
+  background: var(--paper-edge);
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.img-wrap img {
+  width: 100%; height: 100%; object-fit: contain;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
+  transition: filter 0.2s, transform 0.2s;
+}
+.entry.unowned .img-wrap img {
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15)) grayscale(0.55) brightness(0.95);
+  opacity: 0.78;
+}
+
+/* The "ACQUIRED" rubber stamp, shown when ALL variants owned */
+.stamp {
+  position: absolute;
+  top: 38%; left: 50%;
+  transform: translate(-50%, -50%) rotate(-14deg);
+  font-family: 'Bodoni Moda', serif;
+  font-weight: 900;
+  font-size: 32px;
+  letter-spacing: 0.12em;
+  color: var(--oxblood);
+  border: 4px solid var(--oxblood);
+  padding: 2px 14px 0;
+  opacity: 0;
+  pointer-events: none;
+  text-transform: uppercase;
+  background: rgba(237,228,204,0.08);
+  font-variant: small-caps;
+  white-space: nowrap;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+  transition: opacity 0.2s;
+}
+.entry.complete .stamp { opacity: 0.82; }
+.entry.complete .stamp::before, .entry.complete .stamp::after {
+  content: "★";
+  margin: 0 6px;
+  font-size: 18px;
+  vertical-align: middle;
+}
+
+.caption {
+  padding: 10px 4px 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.caption .name {
+  font-family: 'Bodoni Moda', serif;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.15;
+}
+.caption .meta {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-soft);
+  display: flex; justify-content: space-between; align-items: baseline;
+}
+.caption .price { color: var(--ink); font-weight: 700; }
+
+.variants {
+  display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap;
+}
+.variant-btn {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: 1px solid var(--rule);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 6px 4px;
+  color: var(--ink);
+  cursor: pointer;
+  position: relative;
+  transition: all 0.15s;
+}
+.variant-btn::before {
+  content: "□";
+  margin-right: 4px;
+  opacity: 0.6;
+}
+.variant-btn:hover { background: var(--paper); }
+.variant-btn.owned {
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
+}
+.variant-btn.owned::before { content: "■"; opacity: 1; }
+
+.illustrator {
+  font-family: 'Bodoni Moda', serif;
+  font-style: italic;
+  font-size: 10.5px;
+  color: var(--ink-soft);
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dotted var(--rule);
+}
+
+/* ─── EMPTY STATE ─────────────────────────────────────── */
+.empty {
+  grid-column: 1 / -1;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--ink-soft);
+  font-family: 'Bodoni Moda', serif;
+  font-style: italic;
+  font-size: 18px;
+}
+
+/* ─── FOOTER ─────────────────────────────────────── */
+footer {
+  margin-top: 50px;
+  padding-top: 20px;
+  border-top: 3px double var(--rule);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 20px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+footer .right { text-align: right; }
+footer button {
+  background: transparent;
+  border: 1px solid var(--rule);
+  padding: 6px 12px;
+  font-family: inherit; font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  cursor: pointer;
+  color: var(--ink);
+}
+footer button:hover { background: var(--paper-2); }
+footer .actions { display: flex; gap: 6px; justify-content: center; }
+footer a { color: var(--oxblood); text-decoration: underline; text-decoration-style: dotted; }
+
+/* ─── TOAST ─────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: var(--ink); color: var(--paper);
+  padding: 10px 16px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  opacity: 0; transition: opacity 0.2s;
+  pointer-events: none;
+  z-index: 999;
+  border: 1px solid var(--rule);
+}
+.toast.show { opacity: 1; }
+
+/* ─── DETAIL OVERLAY ─────────────────────────────────────── */
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(20, 30, 24, 0.7);
+  display: none;
+  align-items: center; justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+.overlay.open { display: flex; }
+.detail {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  max-width: 880px; width: 100%;
+  max-height: 92vh;
+  display: grid;
+  grid-template-columns: 1fr 1.2fr;
+  position: relative;
+  box-shadow: 0 20px 60px -10px rgba(0,0,0,0.5);
+  overflow: hidden;
+}
+.detail .left-pane { padding: 28px; background: var(--paper-2); display: flex; align-items: center; justify-content: center; }
+.detail .left-pane img { max-width: 100%; max-height: 75vh; filter: drop-shadow(0 12px 36px rgba(0,0,0,0.3)); }
+.detail .right-pane { padding: 32px; overflow-y: auto; }
+.detail h2 { font-family: 'Bodoni Moda', serif; font-weight: 900; font-size: 32px; margin: 0 0 4px; line-height: 1; }
+.detail .num { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.18em; color: var(--oxblood); }
+.detail dl { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.06em; margin: 18px 0 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 14px; }
+.detail dt { color: var(--ink-soft); text-transform: uppercase; }
+.detail dd { margin: 0; }
+.detail .close {
+  position: absolute; top: 12px; right: 14px;
+  background: transparent; border: 0; font-family: 'Bodoni Moda', serif;
+  font-size: 26px; color: var(--ink); cursor: pointer;
+  line-height: 1;
+}
+.detail .variant-block { margin-top: 24px; padding-top: 20px; border-top: 1px dashed var(--rule); }
+.detail .variant-block .label { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 8px; }
+.detail .variants { gap: 6px; }
+.detail .variants .variant-btn { flex: 0 0 auto; padding: 9px 14px; font-size: 11px; }
+.detail .price-block { margin-top: 18px; }
+.detail .price-block .big {
+  font-family: 'Bodoni Moda', serif;
+  font-weight: 900;
+  font-size: 36px;
+  line-height: 1;
+}
+.detail .price-block .src { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; color: var(--ink-soft); text-transform: uppercase; margin-top: 4px; }
+
+@media (max-width: 720px) {
+  .ledger { grid-template-columns: 1fr 1fr; }
+  .ledger .col:nth-child(2) { border-right: 0; }
+  .detail { grid-template-columns: 1fr; max-height: 96vh; }
+  .detail .left-pane img { max-height: 40vh; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══════════════════ MASTHEAD ═══════════════════ -->
+  <header class="masthead">
+    <div class="left">No. 03 · Mega Evolution Series</div>
+    <div class="center">
+      <div class="series-tag">A Collector's Register</div>
+      <h1>Perfect Order</h1>
+      <div class="subtitle">88 printed · 124 total · released 27 March 2026</div>
+      <svg class="ornament" viewBox="0 0 220 16" fill="none">
+        <line x1="0" y1="8" x2="90" y2="8" stroke="#1c2a25" stroke-width="0.7"/>
+        <line x1="130" y1="8" x2="220" y2="8" stroke="#1c2a25" stroke-width="0.7"/>
+        <circle cx="110" cy="8" r="2.4" fill="#6e1f1f"/>
+        <circle cx="95" cy="8" r="1" fill="#1c2a25"/>
+        <circle cx="125" cy="8" r="1" fill="#1c2a25"/>
+      </svg>
+    </div>
+    <div class="right" id="masthead-date"></div>
+  </header>
+
+  <!-- ═══════════════════ LEDGER ═══════════════════ -->
+  <section class="ledger">
+    <div class="col">
+      <div class="label">Collection Progress</div>
+      <div class="value"><span id="ld-pct">0</span><span style="font-size:18px;opacity:.6;">%</span></div>
+      <div class="sub"><span id="ld-slots-owned">0</span> of <span id="ld-slots-total">0</span> slots filled</div>
+      <div class="constellation" id="constellation"></div>
+    </div>
+    <div class="col">
+      <div class="label">Cards Acquired</div>
+      <div class="value"><span id="ld-cards-owned">0</span><span style="opacity:.4">/<span id="ld-cards-total">0</span></span></div>
+      <div class="sub">distinct cards held</div>
+    </div>
+    <div class="col">
+      <div class="label">Value Held</div>
+      <div class="value" id="ld-value-owned">€0</div>
+      <div class="sub">est. market avg.</div>
+    </div>
+    <div class="col">
+      <div class="label">Yet to Acquire</div>
+      <div class="value" id="ld-value-missing">€0</div>
+      <div class="sub">value remaining</div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ CONTROLS ═══════════════════ -->
+  <div class="controls">
+    <div class="search">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2"/></svg>
+      <input id="search-input" type="text" placeholder="Search by name, rarity, illustrator…" autocomplete="off" />
+    </div>
+    <div class="chips" id="filter-status">
+      <button class="chip active" data-status="all">All</button>
+      <button class="chip" data-status="owned">Acquired</button>
+      <button class="chip danger" data-status="missing">Needed</button>
+    </div>
+    <div class="chips" id="filter-sort">
+      <button class="chip active" data-sort="default">By Plate №</button>
+      <button class="chip" data-sort="price-desc">Price ↓</button>
+      <button class="chip" data-sort="price-asc">Price ↑</button>
+    </div>
+    <div class="chips" id="filter-rarity"></div>
+  </div>
+
+  <!-- ═══════════════════ GRID ═══════════════════ -->
+  <section class="grid" id="grid"></section>
+
+  <!-- ═══════════════════ FOOTER ═══════════════════ -->
+  <footer>
+    <div class="left">Data — TCGdex · Prices — Cardmarket (EUR avg.)</div>
+    <div class="actions">
+      <button id="refresh-btn">Refresh Prices</button>
+      <button id="reset-btn">Reset Collection</button>
+      <button id="export-btn">Export</button>
+    </div>
+    <div class="right">Fetched <span id="fetched-at"></span></div>
+  </footer>
+
+</div>
+
+<!-- ═══════════════════ DETAIL ═══════════════════ -->
+<div class="overlay" id="overlay">
+  <div class="detail">
+    <button class="close" aria-label="Close">×</button>
+    <div class="left-pane"><img id="d-img" alt=""/></div>
+    <div class="right-pane">
+      <div class="num" id="d-num"></div>
+      <h2 id="d-name"></h2>
+      <div class="price-block">
+        <div class="big" id="d-price"></div>
+        <div class="src">Cardmarket 30-day avg.</div>
+      </div>
+      <dl>
+        <dt>Rarity</dt><dd id="d-rarity"></dd>
+        <dt>Category</dt><dd id="d-category"></dd>
+        <dt>Illustrator</dt><dd id="d-illustrator"></dd>
+        <dt>Set Code</dt><dd id="d-setcode"></dd>
+        <dt>Low / Trend</dt><dd id="d-pricerange"></dd>
+      </dl>
+      <div class="variant-block">
+        <div class="label">Variants to Collect</div>
+        <div class="variants" id="d-variants"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const DATA = /*__DATA__*/;
+const STORAGE_KEY = "perfect-order-owned-v1";
+
+const VARIANT_ORDER = ["normal", "holo", "reverse", "firstEdition", "wPromo"];
+const VARIANT_LABELS = {
+  normal: "Normal",
+  holo: "Holo",
+  reverse: "Reverse",
+  firstEdition: "1st Ed.",
+  wPromo: "Promo",
+};
+
+let owned = loadOwned();
+let filters = { status: "all", rarity: null, q: "", sort: "default" };
+
+function loadOwned() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveOwned() { localStorage.setItem(STORAGE_KEY, JSON.stringify(owned)); }
+
+function cardVariants(c) {
+  const v = c.variants || {};
+  return VARIANT_ORDER.filter(k => v[k]);
+}
+function slotKey(cardId, variant) { return `${cardId}|${variant}`; }
+function isOwned(cardId, variant) { return !!owned[slotKey(cardId, variant)]; }
+function totalSlots() { return DATA.cards.reduce((s,c) => s + cardVariants(c).length, 0); }
+function ownedSlots() {
+  return DATA.cards.reduce((s,c) => s + cardVariants(c).filter(v => isOwned(c.id, v)).length, 0);
+}
+function isCardComplete(c) {
+  const vs = cardVariants(c);
+  return vs.length > 0 && vs.every(v => isOwned(c.id, v));
+}
+function isCardAnyOwned(c) {
+  return cardVariants(c).some(v => isOwned(c.id, v));
+}
+function cardPrice(c) {
+  return c.cm_avg != null ? c.cm_avg : (c.cm_trend != null ? c.cm_trend : 0);
+}
+function fmtEUR(n) {
+  if (n == null) return "—";
+  return "€" + Number(n).toLocaleString("en-IE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function escapeHtml(s) {
+  return String(s ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+}
+
+function imgUrl(c, size) {
+  // c.image is base URL like "https://assets.tcgdex.net/en/me/me03/001"
+  return `${c.image}/${size}.webp`;
+}
+
+function uniqueRarities() {
+  const set = new Set();
+  DATA.cards.forEach(c => { if (c.rarity) set.add(c.rarity); });
+  // Ordered by rough scarcity
+  const order = ["Common","Uncommon","Rare","Double rare","Ultra Rare","Illustration rare","Special illustration rare","Mega Hyper Rare"];
+  const sorted = [...set].sort((a,b) => order.indexOf(a) - order.indexOf(b));
+  return sorted;
+}
+
+function rarityCount(r) { return DATA.cards.filter(c => c.rarity === r).length; }
+
+function passesFilter(c) {
+  if (filters.status === "owned" && !isCardAnyOwned(c)) return false;
+  if (filters.status === "missing" && isCardComplete(c)) return false;
+  if (filters.rarity && c.rarity !== filters.rarity) return false;
+  if (filters.q) {
+    const hay = `${c.name} ${c.rarity} ${c.illustrator || ""} ${c.localId}`.toLowerCase();
+    if (!hay.includes(filters.q.toLowerCase())) return false;
+  }
+  return true;
+}
+
+function renderRarityChips() {
+  const wrap = document.getElementById("filter-rarity");
+  wrap.innerHTML = "";
+  const all = document.createElement("button");
+  all.className = "chip" + (filters.rarity === null ? " active" : "");
+  all.dataset.rarity = "";
+  all.innerHTML = `All <span class="count">${DATA.cards.length}</span>`;
+  wrap.appendChild(all);
+  for (const r of uniqueRarities()) {
+    const b = document.createElement("button");
+    b.className = "chip" + (filters.rarity === r ? " active" : "");
+    b.dataset.rarity = r;
+    b.innerHTML = `${escapeHtml(r)} <span class="count">${rarityCount(r)}</span>`;
+    wrap.appendChild(b);
+  }
+  wrap.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+    filters.rarity = c.dataset.rarity || null;
+    renderRarityChips();
+    renderGrid();
+  }));
+}
+
+function renderStatusChips() {
+  document.querySelectorAll("#filter-status .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.status === filters.status);
+  });
+}
+
+function renderGrid() {
+  const grid = document.getElementById("grid");
+  grid.innerHTML = "";
+  const visible = DATA.cards.filter(passesFilter);
+  if (filters.sort === "price-desc") {
+    visible.sort((a, b) => (cardPrice(b) || 0) - (cardPrice(a) || 0));
+  } else if (filters.sort === "price-asc") {
+    visible.sort((a, b) => (cardPrice(a) || 0) - (cardPrice(b) || 0));
+  }
+  if (!visible.length) {
+    const e = document.createElement("div");
+    e.className = "empty";
+    e.textContent = "No cards match the current filters.";
+    grid.appendChild(e);
+    return;
+  }
+  const frag = document.createDocumentFragment();
+  for (const c of visible) {
+    const variants = cardVariants(c);
+    const complete = isCardComplete(c);
+    const anyOwned = isCardAnyOwned(c);
+    const entry = document.createElement("div");
+    entry.className = "entry " + (anyOwned ? (complete ? "complete" : "partial") : "unowned");
+
+    const variantBtns = variants.map(v => `
+      <button class="variant-btn ${isOwned(c.id, v) ? "owned" : ""}"
+              data-card="${c.id}" data-variant="${v}" title="Toggle ${VARIANT_LABELS[v]}">
+        ${VARIANT_LABELS[v]}
+      </button>
+    `).join("");
+
+    entry.innerHTML = `
+      <div class="plate">
+        <span class="plate-num">PLATE №${escapeHtml(c.localId)}</span>
+        <span class="plate-rarity">${escapeHtml(c.rarity || "—")}</span>
+        <div class="img-wrap">
+          <img src="${imgUrl(c,'low')}" alt="${escapeHtml(c.name)}" loading="lazy" />
+          <div class="stamp">Acquired</div>
+        </div>
+      </div>
+      <div class="caption">
+        <div class="name">${escapeHtml(c.name)}</div>
+        <div class="meta">
+          <span class="rarity">${escapeHtml(c.illustrator ? "Illus. " + c.illustrator : c.category || "")}</span>
+          <span class="price">${fmtEUR(cardPrice(c))}</span>
+        </div>
+        <div class="variants">${variantBtns}</div>
+      </div>
+    `;
+
+    // Open detail on image click
+    entry.querySelector(".img-wrap").addEventListener("click", () => openDetail(c));
+    // Variant toggle
+    entry.querySelectorAll(".variant-btn").forEach(b => {
+      b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        toggleSlot(b.dataset.card, b.dataset.variant);
+      });
+    });
+    frag.appendChild(entry);
+  }
+  grid.appendChild(frag);
+}
+
+function toggleSlot(cardId, variant) {
+  const k = slotKey(cardId, variant);
+  if (owned[k]) delete owned[k]; else owned[k] = true;
+  saveOwned();
+  renderGrid();
+  renderStats();
+}
+
+function renderStats() {
+  const total = totalSlots();
+  const owned_n = ownedSlots();
+  const pct = total ? Math.round((owned_n / total) * 100) : 0;
+  document.getElementById("ld-pct").textContent = pct;
+  document.getElementById("ld-slots-owned").textContent = owned_n;
+  document.getElementById("ld-slots-total").textContent = total;
+
+  const totalCards = DATA.cards.length;
+  const cardsOwned = DATA.cards.filter(isCardAnyOwned).length;
+  document.getElementById("ld-cards-owned").textContent = cardsOwned;
+  document.getElementById("ld-cards-total").textContent = totalCards;
+
+  let valueOwned = 0, valueMissing = 0;
+  for (const c of DATA.cards) {
+    const p = cardPrice(c) || 0;
+    if (isCardComplete(c)) valueOwned += p;
+    else if (isCardAnyOwned(c)) {
+      // partial — count proportionally by variants
+      const vs = cardVariants(c);
+      const have = vs.filter(v => isOwned(c.id, v)).length;
+      const portion = p * (have / vs.length);
+      valueOwned += portion;
+      valueMissing += p - portion;
+    } else {
+      valueMissing += p;
+    }
+  }
+  document.getElementById("ld-value-owned").textContent = fmtEUR(valueOwned);
+  document.getElementById("ld-value-missing").textContent = fmtEUR(valueMissing);
+
+  // Constellation: a dot per slot
+  const con = document.getElementById("constellation");
+  con.innerHTML = "";
+  let i = 0;
+  for (const c of DATA.cards) {
+    for (const v of cardVariants(c)) {
+      const d = document.createElement("span");
+      d.className = "dot" + (isOwned(c.id, v) ? " lit" : "");
+      d.title = `#${c.localId} ${c.name} · ${VARIANT_LABELS[v]}`;
+      con.appendChild(d);
+      i++;
+    }
+  }
+}
+
+/* DETAIL OVERLAY */
+let currentDetailCard = null;
+function openDetail(c) {
+  currentDetailCard = c;
+  document.getElementById("d-img").src = imgUrl(c, "high");
+  document.getElementById("d-name").textContent = c.name;
+  document.getElementById("d-num").textContent = `PLATE №${c.localId} · ${c.rarity || ""}`;
+  document.getElementById("d-price").textContent = fmtEUR(cardPrice(c));
+  document.getElementById("d-rarity").textContent = c.rarity || "—";
+  document.getElementById("d-category").textContent = c.category || "—";
+  document.getElementById("d-illustrator").textContent = c.illustrator || "Unknown";
+  document.getElementById("d-setcode").textContent = c.id;
+  const lo = c.cm_low != null ? "€" + c.cm_low.toFixed(2) : "—";
+  const tr = c.cm_trend != null ? "€" + c.cm_trend.toFixed(2) : "—";
+  document.getElementById("d-pricerange").textContent = `${lo} / ${tr}`;
+
+  const vWrap = document.getElementById("d-variants");
+  vWrap.innerHTML = "";
+  for (const v of cardVariants(c)) {
+    const b = document.createElement("button");
+    b.className = "variant-btn" + (isOwned(c.id, v) ? " owned" : "");
+    b.dataset.card = c.id;
+    b.dataset.variant = v;
+    b.textContent = VARIANT_LABELS[v];
+    b.addEventListener("click", () => {
+      toggleSlot(c.id, v);
+      openDetail(c); // re-render
+    });
+    vWrap.appendChild(b);
+  }
+  document.getElementById("overlay").classList.add("open");
+}
+function closeDetail() {
+  document.getElementById("overlay").classList.remove("open");
+  currentDetailCard = null;
+}
+
+document.getElementById("overlay").addEventListener("click", (e) => {
+  if (e.target.id === "overlay") closeDetail();
+});
+document.querySelector(".close").addEventListener("click", closeDetail);
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeDetail(); });
+
+/* CONTROLS */
+document.querySelectorAll("#filter-status .chip").forEach(c => {
+  c.addEventListener("click", () => {
+    filters.status = c.dataset.status;
+    renderStatusChips();
+    renderGrid();
+  });
+});
+document.querySelectorAll("#filter-sort .chip").forEach(c => {
+  c.addEventListener("click", () => {
+    filters.sort = c.dataset.sort;
+    document.querySelectorAll("#filter-sort .chip").forEach(x => {
+      x.classList.toggle("active", x.dataset.sort === filters.sort);
+    });
+    renderGrid();
+  });
+});
+document.getElementById("search-input").addEventListener("input", (e) => {
+  filters.q = e.target.value.trim();
+  renderGrid();
+});
+
+/* TOAST */
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), 2000);
+}
+
+/* REFRESH PRICES — re-fetches from TCGdex live */
+document.getElementById("refresh-btn").addEventListener("click", async () => {
+  const btn = document.getElementById("refresh-btn");
+  btn.disabled = true; btn.textContent = "Refreshing…";
+  let updated = 0, failed = 0;
+  const batch = 12;
+  for (let i = 0; i < DATA.cards.length; i += batch) {
+    const slice = DATA.cards.slice(i, i + batch);
+    await Promise.all(slice.map(async (c) => {
+      try {
+        const r = await fetch(`https://api.tcgdex.net/v2/en/cards/${c.id}`);
+        if (!r.ok) throw new Error(r.status);
+        const j = await r.json();
+        const cm = j.pricing?.cardmarket;
+        if (cm) {
+          c.cm_avg = cm.avg; c.cm_low = cm.low; c.cm_trend = cm.trend;
+          updated++;
+        }
+      } catch { failed++; }
+    }));
+    btn.textContent = `Refreshing… ${Math.min(i+batch, DATA.cards.length)}/${DATA.cards.length}`;
+  }
+  btn.disabled = false; btn.textContent = "Refresh Prices";
+  renderGrid(); renderStats();
+  document.getElementById("fetched-at").textContent = new Date().toLocaleString();
+  toast(`Updated ${updated} prices${failed ? " · " + failed + " failed" : ""}`);
+});
+
+document.getElementById("reset-btn").addEventListener("click", () => {
+  if (!confirm("Clear all 'acquired' marks?")) return;
+  owned = {}; saveOwned();
+  renderGrid(); renderStats();
+  toast("Collection reset");
+});
+
+document.getElementById("export-btn").addEventListener("click", () => {
+  const payload = { set: DATA.set.id, owned, exportedAt: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `perfect-order-collection-${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+});
+
+/* INIT */
+document.getElementById("masthead-date").textContent = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+document.getElementById("fetched-at").textContent = DATA.fetchedAt ? new Date(DATA.fetchedAt).toLocaleString() : "—";
+renderRarityChips();
+renderStatusChips();
+renderGrid();
+renderStats();
+</script>
+</body>
+</html>
