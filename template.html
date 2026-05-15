@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#ede4cc" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
 <title>The Register — Pokémon TCG & Magic: The Gathering Collection Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -477,13 +480,164 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
   letter-spacing: 0.12em; color: var(--ink-soft); text-transform: uppercase; margin-top: 4px;
 }
 
+/* ─── Touch / no-hover: disable hover-lift to prevent stuck states ─── */
+@media (hover: none) {
+  .set-tile:hover, .entry:hover .plate { transform: none; box-shadow: none; }
+  .chip:hover, .game-tab:hover, .variant-btn:hover, footer button:hover { background: transparent; }
+}
+
+/* ─── Tablet & narrow desktop ─── */
+@media (max-width: 900px) {
+  .page { padding: 22px 18px 60px; }
+  .set-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+  .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 18px 12px; }
+}
+
+/* ─── Phone (≤720px) ─── */
 @media (max-width: 720px) {
-  .game-tabs { flex-direction: column; }
+  .page { padding: 16px 14px 60px; }
+
+  /* Masthead: collapse to single column, hide side labels */
+  .masthead {
+    grid-template-columns: 1fr;
+    gap: 4px;
+    padding: 18px 0 14px;
+    text-align: center;
+  }
+  .masthead .left, .masthead .right { display: none; }
+  .masthead h1 { font-size: clamp(34px, 9vw, 48px); }
+  .masthead .subtitle { font-size: 12px; padding: 0 8px; }
+  .ornament { width: 160px; }
+
+  /* Game tabs stack and shrink */
+  .game-tabs { flex-direction: column; margin-top: 18px; }
+  .game-tab { padding: 14px 16px 10px; font-size: 18px; }
   .game-tab + .game-tab { border-left: 1px solid var(--rule); border-top: 0; }
+  .game-tab.active::after { height: 3px; }
+
+  /* Picker header + controls */
+  .picker-header { margin: 18px 0 10px; gap: 6px; }
+  .picker-header h2 { font-size: 24px; }
+  .picker-header .summary { font-size: 10px; }
+  .picker-controls { padding: 10px 0; gap: 8px; margin-bottom: 16px; }
+  .picker-controls .search { padding: 10px 12px; min-width: 100%; }
+  .picker-controls .chips { width: 100%; overflow-x: auto; flex-wrap: nowrap; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+  .picker-controls .chips::-webkit-scrollbar { display: none; }
+  .chip { flex: 0 0 auto; padding: 9px 12px; font-size: 11px; }
+
+  /* Set tiles — 1 per row on phone, more compact */
+  .set-grid { grid-template-columns: 1fr; gap: 14px; }
+  .set-tile { padding: 16px 14px 12px; min-height: 0; }
+  .set-tile h3 { font-size: 18px; }
+  .set-tile .logo-wrap { height: 56px; }
+  .set-tile .stat .val { font-size: 14px; }
+  .set-tile .tile-num, .set-tile .tile-date { font-size: 9px; }
+
+  /* Set detail masthead */
+  .back-bar { margin: 16px 0 10px; }
+  .back-bar .back { padding: 9px 12px; }
+  .back-bar span { display: none; }
+  .set-masthead { padding: 14px 0; }
+  .set-masthead h2 { font-size: clamp(28px, 7vw, 40px); }
+  .set-masthead .sub { font-size: 12px; }
+
+  /* Ledger: 2x2 grid */
   .ledger { grid-template-columns: 1fr 1fr; }
-  .ledger .col:nth-child(2) { border-right: 0; }
-  .detail { grid-template-columns: 1fr; max-height: 96vh; }
-  .detail .left-pane img { max-height: 40vh; }
+  .ledger .col { padding: 14px 16px; border-right: 1px dashed var(--rule); border-bottom: 1px dashed var(--rule); }
+  .ledger .col:nth-child(2n) { border-right: 0; }
+  .ledger .col:nth-child(3), .ledger .col:nth-child(4) { border-bottom: 0; }
+  .ledger .col:first-child { grid-column: 1 / -1; }   /* progress row spans full width */
+  .ledger .col:first-child { border-right: 0; }
+  .ledger .value { font-size: 24px; }
+  .constellation { grid-template-columns: repeat(auto-fill, 6px); gap: 2px; }
+  .constellation .dot { width: 6px; height: 6px; }
+
+  /* Sticky controls: still sticky but compact, horizontally scrollable chips */
+  .controls {
+    margin: 0 -14px;
+    padding: 10px 14px;
+    gap: 8px;
+  }
+  .controls .search { padding: 8px 10px; min-width: 100%; }
+  .controls .chips {
+    width: 100%;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+  }
+  .controls .chips::-webkit-scrollbar { display: none; }
+
+  /* Card grid: 2 per row at 375px, 3 at 480px+ */
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 10px;
+    margin-top: 16px;
+  }
+  .plate { padding: 8px 8px 0; }
+  .plate-num, .plate-rarity { font-size: 9px; padding: 0 5px; }
+  .caption { padding: 8px 2px 0; }
+  .caption .name { font-size: 14px; line-height: 1.15; }
+  .caption .meta { font-size: 9px; }
+
+  /* Variant buttons: taller for taps */
+  .variant-btn {
+    padding: 10px 4px;
+    font-size: 9.5px;
+    min-height: 36px;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .variants { gap: 3px; margin-top: 6px; }
+
+  /* Stamp: smaller on tiny cards */
+  .stamp { font-size: 22px; padding: 2px 10px 0; border-width: 3px; }
+  .entry.complete .stamp::before, .entry.complete .stamp::after { font-size: 14px; margin: 0 4px; }
+
+  /* Detail overlay: full-screen-feel on phone */
+  .overlay { padding: 0; align-items: stretch; }
+  .detail {
+    grid-template-columns: 1fr;
+    max-width: 100%;
+    max-height: 100vh;
+    height: 100vh;
+    border: 0;
+    overflow-y: auto;
+    grid-template-rows: auto 1fr;
+  }
+  .detail .left-pane { padding: 16px; min-height: 40vh; }
+  .detail .left-pane img { max-height: 48vh; }
+  .detail .right-pane { padding: 18px 18px 28px; }
+  .detail h2 { font-size: 26px; }
+  .detail .price-block .big { font-size: 30px; }
+  .detail .close { font-size: 32px; top: 4px; right: 12px; padding: 6px 10px; z-index: 2; }
+  .detail dl { grid-template-columns: auto 1fr; gap: 6px 12px; }
+  .detail .variants .variant-btn { padding: 11px 14px; font-size: 11px; }
+
+  /* Footer: stack */
+  footer {
+    grid-template-columns: 1fr;
+    gap: 14px;
+    text-align: center;
+    font-size: 9px;
+  }
+  footer .left, footer .right { text-align: center; }
+  footer .actions { flex-wrap: wrap; }
+  footer button { padding: 9px 14px; min-height: 36px; }
+
+  /* Toast: don't overflow tiny screens */
+  .toast { left: 14px; right: 14px; transform: none; bottom: 14px; font-size: 10px; }
+}
+
+/* ─── Tiny phones (≤380px) ─── */
+@media (max-width: 380px) {
+  .page { padding: 12px 10px 50px; }
+  .controls { margin: 0 -10px; padding: 10px 10px; }
+  .grid { gap: 16px 8px; }
+  .caption .name { font-size: 13px; }
+  .ledger .value { font-size: 20px; }
+  .ledger .col { padding: 12px 12px; }
+  .set-tile { padding: 14px 12px 10px; }
 }
 </style>
 </head>
