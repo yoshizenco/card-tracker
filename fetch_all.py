@@ -51,7 +51,9 @@ def fetch_pokemon():
         out = DATA / "pokemon" / f"{sid}.json"
         if out.exists():
             existing = json.load(out.open())
-            manifest.append(meta_from_pkm(s, existing["cards"]))
+            # Use cached set metadata (may have logo_alt added by enrich_pokemon.py)
+            merged_set = {**s, **existing.get("set", {})}
+            manifest.append(meta_from_pkm(merged_set, existing["cards"]))
             print(f"  [{idx:>2}/{len(recent)}] {sid:>8} — cached ({len(existing['cards'])} cards)")
             continue
 
@@ -102,8 +104,15 @@ def slim_pkm(c):
         "cm_avg": cm.get("avg"), "cm_low": cm.get("low"), "cm_trend": cm.get("trend"),
     }
 
+EUR_TO_USD = 1.08
+def card_usd(c):
+    if c.get("usd_market") is not None: return c["usd_market"]
+    if c.get("cm_avg") is not None: return c["cm_avg"] * EUR_TO_USD
+    if c.get("cm_trend") is not None: return c["cm_trend"] * EUR_TO_USD
+    return 0
+
 def meta_from_pkm(s, cards):
-    total_value = sum((c.get("cm_avg") or 0) for c in cards)
+    total_value = sum(card_usd(c) for c in cards)
     return {
         "game": "pokemon",
         "id": s["id"],
@@ -114,6 +123,7 @@ def meta_from_pkm(s, cards):
         "loadedCount": len(cards),
         "totalValue": round(total_value, 2),
         "logo": s.get("logo"),
+        "logo_alt": s.get("logo_alt"),
         "symbol": s.get("symbol"),
         "file": f"data/pokemon/{s['id']}.json",
     }

@@ -198,6 +198,24 @@ body.game-mtg { --accent: var(--accent-mtg); }
   max-height: 60px; max-width: 90%; object-fit: contain;
   filter: drop-shadow(0 1px 2px rgba(0,0,0,0.15));
 }
+
+/* Logo placeholder when no logo URL exists */
+.logo-placeholder {
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 4px 8px; text-align: center; gap: 2px;
+  background:
+    repeating-linear-gradient(45deg, rgba(0,0,0,0.025) 0 8px, transparent 8px 16px);
+}
+.logo-placeholder .lp-name {
+  font-family: 'Bodoni Moda', serif; font-weight: 900;
+  font-size: 16px; line-height: 1; font-variant: small-caps;
+  color: var(--ink); letter-spacing: 0.02em;
+}
+.logo-placeholder .lp-sub {
+  font-family: 'JetBrains Mono', monospace; font-size: 8px;
+  letter-spacing: 0.18em; color: var(--ink-soft); text-transform: uppercase;
+}
 .set-tile h3 {
   font-family: 'Bodoni Moda', serif; font-weight: 700;
   font-size: 22px; margin: 6px 0 0; line-height: 1.1;
@@ -355,6 +373,42 @@ body.game-mtg .constellation .dot.lit { box-shadow: 0 0 6px rgba(26,58,82,0.5); 
   width: 100%; height: 100%; object-fit: contain;
   filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15));
   transition: filter 0.2s, transform 0.2s;
+}
+
+/* ── Placeholder card art when no image is available ── */
+.img-placeholder {
+  width: 100%; height: 100%;
+  background:
+    repeating-linear-gradient(45deg, rgba(0,0,0,0.03) 0 8px, transparent 8px 16px),
+    linear-gradient(180deg, #e9ddbe 0%, #d4c79d 100%);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 14px 10px; text-align: center; gap: 6px;
+  border: 1px solid var(--paper-edge);
+  position: relative;
+}
+.img-placeholder::before, .img-placeholder::after {
+  content: ""; position: absolute; left: 8px; right: 8px; height: 1px; background: var(--rule); opacity: 0.3;
+}
+.img-placeholder::before { top: 10px; }
+.img-placeholder::after { bottom: 10px; }
+.img-placeholder .p-num {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: 0.18em; color: var(--ink-soft); text-transform: uppercase;
+}
+.img-placeholder .p-name {
+  font-family: 'Bodoni Moda', serif; font-weight: 900;
+  font-size: 18px; line-height: 1.05;
+  color: var(--ink); font-variant: small-caps; letter-spacing: 0.01em;
+  padding: 4px 2px;
+}
+.img-placeholder .p-rarity {
+  font-family: 'JetBrains Mono', monospace; font-size: 8.5px;
+  letter-spacing: 0.18em; color: var(--accent); text-transform: uppercase;
+}
+.img-placeholder .p-note {
+  font-family: 'Bodoni Moda', serif; font-style: italic;
+  font-size: 10px; color: var(--ink-soft);
+  margin-top: auto;
 }
 .entry.unowned .img-wrap img {
   filter: drop-shadow(0 2px 6px rgba(0,0,0,0.15)) grayscale(0.55) brightness(0.95);
@@ -756,7 +810,7 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
 
   <!-- ═══════════════════ FOOTER ═══════════════════ -->
   <footer>
-    <div class="left">Pokémon — TCGdex · Cardmarket prices · MTG — Scryfall · TCGplayer + Cardmarket prices</div>
+    <div class="left">Pokémon — TCGdex + pokemontcg.io · prices in USD · MTG — Scryfall · TCGplayer USD</div>
     <div class="actions">
       <button id="reset-btn">Reset Set</button>
       <button id="export-btn">Export</button>
@@ -829,18 +883,22 @@ function pkmVariants(c) {
   const v = c.variants || {};
   return PKM_VARIANT_ORDER.filter(k => v[k]);
 }
+const EUR_TO_USD = 1.08;
 function pkmPrice(c) {
-  if (c.cm_avg != null) return c.cm_avg;
-  if (c.cm_trend != null) return c.cm_trend;
+  // Prefer real TCGplayer USD; fall back to converting Cardmarket EUR
+  if (c.usd_market != null) return c.usd_market;
+  if (c.cm_avg != null) return c.cm_avg * EUR_TO_USD;
+  if (c.cm_trend != null) return c.cm_trend * EUR_TO_USD;
   return 0;
 }
 function pkmFmt(n) {
   if (n == null) return "—";
-  return "€" + Number(n).toLocaleString("en-IE", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 function pkmImg(c, size) {
-  if (!c.image) return "";
-  return `${c.image}/${size}.webp`;
+  if (c.image) return `${c.image}/${size}.webp`;
+  if (c.image_alt) return c.image_alt;  // fallback from pokemontcg.io
+  return "";
 }
 
 // MTG
@@ -971,11 +1029,19 @@ function renderPicker() {
     tile.dataset.setId = s.id;
     const dateStr = s.releaseDate ? s.releaseDate.replace(/-/g, ".") : "";
     const currency = s.game === "pokemon" ? "€" : "$";
+    const logoUrl = s.logo ? (s.game === "pokemon" ? `${s.logo}.webp` : s.logo) : (s.logo_alt || null);
+    const logoPlaceholder = `
+      <div class="logo-placeholder">
+        <div class="lp-name">${escapeHtml(s.name)}</div>
+        <div class="lp-sub">${escapeHtml(s.series || s.id)}</div>
+      </div>`;
     tile.innerHTML = `
       <span class="tile-num">${escapeHtml(s.id.toUpperCase())}</span>
       <span class="tile-date">${escapeHtml(dateStr)}</span>
       <div class="logo-wrap">
-        ${s.logo ? `<img src="${escapeHtml(s.logo)}${s.game==='pokemon' ? '.webp' : ''}" alt="${escapeHtml(s.name)}" onerror="this.style.display='none'"/>` : ""}
+        ${logoUrl
+          ? `<img src="${escapeHtml(logoUrl)}" alt="${escapeHtml(s.name)}" onerror="this.outerHTML=this.dataset.fallback" data-fallback="${escapeHtml(logoPlaceholder)}"/>`
+          : logoPlaceholder}
       </div>
       <h3>${escapeHtml(s.name || s.id)}</h3>
       <div class="series">${escapeHtml(s.series || "")}</div>
@@ -1009,7 +1075,7 @@ async function showSetView(game, setId) {
   document.getElementById("set-breadcrumb").textContent =
     `${game === "pokemon" ? "Pokémon" : "MTG"} / ${meta.name}`;
   document.getElementById("ld-value-owned-src").textContent =
-    game === "pokemon" ? "est. Cardmarket (EUR)" : "est. TCGplayer (USD)";
+    game === "pokemon" ? "est. TCGplayer / Cardmarket (USD)" : "est. TCGplayer (USD)";
 
   document.getElementById("grid").innerHTML = '<div class="loading">Loading cards</div>';
   currentSetData = null;
@@ -1118,12 +1184,21 @@ function renderGrid() {
     const imgSmall = getCardImage(game, c, "low") || getCardImage(game, c, "small");
     const number = getCardNumber(game, c);
     const subline = getCardArtist(game, c) ? `Illus. ${getCardArtist(game, c)}` : (getCardCategory(game, c) || "");
+    const placeholder = `
+      <div class="img-placeholder">
+        <div class="p-num">№ ${escapeHtml(number || "?")}</div>
+        <div class="p-name">${escapeHtml(c.name)}</div>
+        <div class="p-rarity">${escapeHtml(c.rarity || "—")}</div>
+        <div class="p-note">no artwork on record</div>
+      </div>`;
     entry.innerHTML = `
       <div class="plate">
         <span class="plate-num">№${escapeHtml(number || "?")}</span>
         <span class="plate-rarity">${escapeHtml(c.rarity || "—")}</span>
         <div class="img-wrap">
-          ${imgSmall ? `<img src="${escapeHtml(imgSmall)}" alt="${escapeHtml(c.name)}" loading="lazy" />` : ""}
+          ${imgSmall
+            ? `<img src="${escapeHtml(imgSmall)}" alt="${escapeHtml(c.name)}" loading="lazy" onerror="this.outerHTML=this.dataset.fallback" data-fallback="${escapeHtml(placeholder)}" />`
+            : placeholder}
           <div class="stamp">Acquired</div>
         </div>
       </div>
@@ -1230,7 +1305,7 @@ function openDetail(c) {
   document.getElementById("d-name").textContent = c.name;
   document.getElementById("d-num").textContent = `№${getCardNumber(game, c)} · ${c.rarity || ""}`;
   document.getElementById("d-price").textContent = fmtPrice(game, getCardPrice(game, c));
-  document.getElementById("d-price-src").textContent = game === "pokemon" ? "Cardmarket 30-day avg." : "TCGplayer cheapest finish";
+  document.getElementById("d-price-src").textContent = game === "pokemon" ? (c.usd_market != null ? "TCGplayer market (USD)" : "Cardmarket EUR → USD est.") : "TCGplayer cheapest finish";
 
   const dl = document.getElementById("d-dl");
   const rows = [];
@@ -1239,9 +1314,10 @@ function openDetail(c) {
   rows.push(["Illustrator", getCardArtist(game, c) || "—"]);
   rows.push(["Set Code", c.id]);
   if (game === "pokemon") {
+    if (c.usd_market != null) rows.push(["TCGplayer USD", "$" + c.usd_market.toFixed(2)]);
     const lo = c.cm_low != null ? "€" + c.cm_low.toFixed(2) : "—";
     const tr = c.cm_trend != null ? "€" + c.cm_trend.toFixed(2) : "—";
-    rows.push(["Low / Trend", `${lo} / ${tr}`]);
+    rows.push(["EUR Low / Trend", `${lo} / ${tr}`]);
   } else {
     if (c.p_usd != null) rows.push(["Nonfoil", "$" + c.p_usd.toFixed(2)]);
     if (c.p_usd_foil != null) rows.push(["Foil", "$" + c.p_usd_foil.toFixed(2)]);
