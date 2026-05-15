@@ -456,8 +456,22 @@ body.game-mtg .constellation .dot.lit { box-shadow: 0 0 6px rgba(26,58,82,0.5); 
 
 .caption { padding: 10px 4px 0; display: flex; flex-direction: column; gap: 4px; }
 .caption .name { font-family: 'Bodoni Moda', serif; font-weight: 700; font-size: 16px; line-height: 1.15; }
-.caption .meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: var(--ink-soft); display: flex; justify-content: space-between; align-items: baseline; }
-.caption .price { color: var(--ink); font-weight: 700; }
+.caption .meta { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.08em; color: var(--ink-soft); display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.caption .price { color: var(--ink); font-weight: 700; flex-shrink: 0; }
+.caption .meta > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.treatment-tag {
+  display: inline-block;
+  background: var(--accent);
+  color: var(--paper);
+  padding: 1px 6px;
+  margin-right: 5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8.5px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+.sub-artist { font-style: italic; color: var(--ink-soft); }
 
 .variants { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
 .variant-btn {
@@ -961,6 +975,7 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
         <button class="chip" data-sort="price-asc">Price ↑</button>
       </div>
       <div class="chips" id="filter-rarity"></div>
+      <div class="chips" id="filter-treatment"></div>
     </div>
 
     <section class="grid" id="grid"></section>
@@ -1046,7 +1061,7 @@ let manifest = { sets: [] };
 let currentGame = "pokemon";
 let currentSetData = null;
 let pickerState = { sort: "date-desc", q: "", trackedOnly: false };
-let setFilters = { status: "all", rarity: null, q: "", sort: "default" };
+let setFilters = { status: "all", rarity: null, q: "", sort: "default", treatment: null };
 
 function trackKey(game, setId) { return `${game}|${setId}`; }
 function isTracked(game, setId) { return !!tracking[trackKey(game, setId)]; }
@@ -1260,6 +1275,31 @@ const MTG_VARIANT_LABEL = {
 function mtgVariants(c) {
   return MTG_VARIANT_ORDER.filter(k => (c.finishes || []).includes(k));
 }
+
+/* MTG treatment classification — for the printing badge + filter */
+const MTG_TREATMENTS = ["Borderless", "Extended Art", "Showcase", "Inverted", "Serialized", "Booster Fun", "Standard"];
+function mtgTreatments(c) {
+  const fx = c.frame_effects || [];
+  const promo = c.promo_types || [];
+  const labels = [];
+  if (c.border_color === "borderless") labels.push("Borderless");
+  if (fx.includes("extendedart")) labels.push("Extended Art");
+  if (fx.includes("showcase")) labels.push("Showcase");
+  if (fx.includes("inverted")) labels.push("Inverted");
+  if (promo.includes("serialized")) labels.push("Serialized");
+  if (promo.includes("boosterfun") && labels.length === 0) labels.push("Booster Fun");
+  return labels;
+}
+function mtgPrimaryTreatment(c) {
+  const t = mtgTreatments(c);
+  if (t.includes("Borderless")) return "Borderless";
+  if (t.includes("Extended Art")) return "Extended Art";
+  if (t.includes("Showcase")) return "Showcase";
+  if (t.includes("Inverted")) return "Inverted";
+  if (t.includes("Serialized")) return "Serialized";
+  if (t.includes("Booster Fun")) return "Booster Fun";
+  return "Standard";
+}
 function mtgPrice(c, variant) {
   if (variant === "foil") return c.p_usd_foil != null ? c.p_usd_foil : null;
   if (variant === "etched") return c.p_usd_etched != null ? c.p_usd_etched : null;
@@ -1464,7 +1504,7 @@ async function showSetView(game, setId) {
   currentSetData = null;
 
   // Reset filters whenever entering a new set
-  setFilters = { status: "all", rarity: null, q: "", sort: "default" };
+  setFilters = { status: "all", rarity: null, q: "", sort: "default", treatment: null };
   document.getElementById("card-search").value = "";
   document.querySelectorAll("#filter-status .chip").forEach(c => c.classList.toggle("active", c.dataset.status === "all"));
   document.querySelectorAll("#filter-sort .chip").forEach(c => c.classList.toggle("active", c.dataset.sort === "default"));
@@ -1481,6 +1521,7 @@ async function showSetView(game, setId) {
   }
 
   renderRarityChips();
+  renderTreatmentChips();
   renderGrid();
   renderStats();
   window.scrollTo({ top: 0 });
@@ -1524,11 +1565,45 @@ function passesFilter(c) {
   if (setFilters.status === "owned" && !anyOwned) return false;
   if (setFilters.status === "missing" && complete) return false;
   if (setFilters.rarity && c.rarity !== setFilters.rarity) return false;
+  if (game === "mtg" && setFilters.treatment && mtgPrimaryTreatment(c) !== setFilters.treatment) return false;
   if (setFilters.q) {
     const hay = `${c.name} ${c.rarity || ""} ${getCardArtist(game, c) || ""} ${getCardNumber(game, c) || ""}`.toLowerCase();
     if (!hay.includes(setFilters.q.toLowerCase())) return false;
   }
   return true;
+}
+
+function renderTreatmentChips() {
+  const wrap = document.getElementById("filter-treatment");
+  wrap.innerHTML = "";
+  if (!currentSetData || currentSetData.game !== "mtg") return;
+
+  // Count treatments present in this set
+  const counts = {};
+  for (const c of currentSetData.cards) {
+    const t = mtgPrimaryTreatment(c);
+    counts[t] = (counts[t] || 0) + 1;
+  }
+  const present = MTG_TREATMENTS.filter(t => counts[t] && counts[t] > 0);
+  if (present.length <= 1) return;   // No variants worth filtering
+
+  const all = document.createElement("button");
+  all.className = "chip" + (setFilters.treatment === null ? " active" : "");
+  all.dataset.treatment = "";
+  all.innerHTML = `All treatments`;
+  wrap.appendChild(all);
+  for (const t of present) {
+    const b = document.createElement("button");
+    b.className = "chip" + (setFilters.treatment === t ? " active" : "");
+    b.dataset.treatment = t;
+    b.innerHTML = `${escapeHtml(t)} <span class="count">${counts[t]}</span>`;
+    wrap.appendChild(b);
+  }
+  wrap.querySelectorAll(".chip").forEach(c => c.addEventListener("click", () => {
+    setFilters.treatment = c.dataset.treatment || null;
+    renderTreatmentChips();
+    renderGrid();
+  }));
 }
 
 function renderGrid() {
@@ -1566,7 +1641,11 @@ function renderGrid() {
     `).join("");
     const imgSmall = getCardImage(game, c, "low") || getCardImage(game, c, "small");
     const number = getCardNumber(game, c);
-    const subline = getCardArtist(game, c) ? `Illus. ${getCardArtist(game, c)}` : (getCardCategory(game, c) || "");
+    const artistText = getCardArtist(game, c) ? `Illus. ${getCardArtist(game, c)}` : (getCardCategory(game, c) || "");
+    const treatment = game === "mtg" ? mtgPrimaryTreatment(c) : null;
+    const subline = (treatment && treatment !== "Standard")
+      ? `<span class="treatment-tag">${escapeHtml(treatment)}</span><span class="sub-artist">${escapeHtml(artistText)}</span>`
+      : escapeHtml(artistText);
     const placeholder = `
       <div class="img-placeholder">
         <div class="p-num">№ ${escapeHtml(number || "?")}</div>
@@ -1588,7 +1667,7 @@ function renderGrid() {
       <div class="caption">
         <div class="name">${escapeHtml(c.name)}</div>
         <div class="meta">
-          <span>${escapeHtml(subline)}</span>
+          <span>${subline}</span>
           <span class="price">${fmtPrice(game, getCardPrice(game, c))}</span>
         </div>
         <div class="variants">${variantBtns}</div>
@@ -1705,6 +1784,10 @@ function openDetail(c) {
     const tr = c.cm_trend != null ? "€" + c.cm_trend.toFixed(2) : "—";
     rows.push(["EUR Low / Trend", `${lo} / ${tr}`]);
   } else {
+    const t = mtgPrimaryTreatment(c);
+    if (t && t !== "Standard") rows.push(["Treatment", t]);
+    if (c.frame_effects && c.frame_effects.length) rows.push(["Frame effects", c.frame_effects.join(", ")]);
+    if (c.promo_types && c.promo_types.length) rows.push(["Promo types", c.promo_types.join(", ")]);
     if (c.scryfall_uri) rows.push(["Scryfall", `<a href="${escapeHtml(c.scryfall_uri)}" target="_blank">view</a>`]);
   }
   dl.innerHTML = rows.map(([k, v]) => `<dt>${escapeHtml(k)}</dt><dd>${v.startsWith && v.startsWith("<") ? v : escapeHtml(v)}</dd>`).join("");
