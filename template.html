@@ -1231,6 +1231,16 @@ function escapeHtml(s) {
   return String(s ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
 
+/* A set is "digital-only" (no real-world market) when it's Pokémon TCG Pocket */
+function isDigitalSet(s) {
+  return (s && s.series === "Pokémon TCG Pocket");
+}
+function isDigitalSetById(game, setId) {
+  if (game !== "pokemon") return false;
+  const m = manifest.sets.find(x => x.game === game && x.id === setId);
+  return isDigitalSet(m);
+}
+
 function toast(msg) {
   const t = document.getElementById("toast");
   t.textContent = msg;
@@ -1436,7 +1446,7 @@ function renderPicker() {
     tile.className = "set-tile";
     tile.dataset.setId = s.id;
     const dateStr = s.releaseDate ? s.releaseDate.replace(/-/g, ".") : "";
-    const currency = s.game === "pokemon" ? "€" : "$";
+    const currency = "$";   // Both games now display USD
     const logoUrl = s.logo ? (s.game === "pokemon" ? `${s.logo}.webp` : s.logo) : (s.logo_alt || null);
     const logoPlaceholder = `
       <div class="logo-placeholder">
@@ -1461,7 +1471,7 @@ function renderPicker() {
       <div class="stats">
         <div class="stat"><span class="lbl">Cards</span><span class="val">${cardCount.toLocaleString()}</span></div>
         <div class="stat"><span class="lbl">Owned</span><span class="val">${ownedCount.toLocaleString()}</span></div>
-        <div class="stat"><span class="lbl">Set Value</span><span class="val">${currency}${Math.round(s.totalValue||0).toLocaleString()}</span></div>
+        <div class="stat"><span class="lbl">Set Value</span><span class="val">${isDigitalSet(s) ? `<em style="font-style:italic;color:var(--ink-soft);font-weight:400;">Digital</em>` : `${currency}${Math.round(s.totalValue||0).toLocaleString()}`}</span></div>
       </div>
       <div class="progress-bar"><div class="fill" style="width:${pct}%;"></div></div>
     `;
@@ -1612,6 +1622,7 @@ function renderGrid() {
   if (!currentSetData) return;
   const game = currentSetData.game;
   const setId = currentSetData.setId;
+  const digital = game === "pokemon" && isDigitalSetById(game, setId);
 
   const visible = currentSetData.cards.filter(passesFilter);
   if (setFilters.sort === "price-desc") visible.sort((a,b) => getCardPrice(game,b) - getCardPrice(game,a));
@@ -1668,7 +1679,7 @@ function renderGrid() {
         <div class="name">${escapeHtml(c.name)}</div>
         <div class="meta">
           <span>${subline}</span>
-          <span class="price">${fmtPrice(game, getCardPrice(game, c))}</span>
+          <span class="price">${digital ? "—" : fmtPrice(game, getCardPrice(game, c))}</span>
         </div>
         <div class="variants">${variantBtns}</div>
       </div>
@@ -1741,8 +1752,14 @@ function renderStats() {
   document.getElementById("ld-slots-total").textContent = totalSlots;
   document.getElementById("ld-cards-owned").textContent = cardsOwned;
   document.getElementById("ld-cards-total").textContent = cardsTotal;
-  document.getElementById("ld-value-owned").textContent = fmtPrice(game, valueOwned);
-  document.getElementById("ld-value-missing").textContent = fmtPrice(game, valueMissing);
+  if (game === "pokemon" && isDigitalSetById(game, setId)) {
+    document.getElementById("ld-value-owned").innerHTML = `<em style="font-style:italic;font-size:20px;color:var(--ink-soft);font-weight:400;">Digital</em>`;
+    document.getElementById("ld-value-missing").innerHTML = `<em style="font-style:italic;font-size:20px;color:var(--ink-soft);font-weight:400;">— no market —</em>`;
+    document.getElementById("ld-value-owned-src").textContent = "Mobile-only game cards have no public market price";
+  } else {
+    document.getElementById("ld-value-owned").textContent = fmtPrice(game, valueOwned);
+    document.getElementById("ld-value-missing").textContent = fmtPrice(game, valueMissing);
+  }
 
   // constellation
   const con = document.getElementById("constellation");
