@@ -221,8 +221,25 @@ def slim_mtg(c):
         "p_eur": p("eur"),
     }
 
+def mtg_card_total_value(c):
+    """Sum of every priced finish for a card — value of a complete master set entry.
+    EUR nonfoil converts at 1.08 if USD missing. Foil/etched are USD-only on Scryfall.
+    """
+    total = 0
+    finishes = c.get("finishes") or []
+    if "nonfoil" in finishes:
+        if c.get("p_usd") is not None:
+            total += c["p_usd"]
+        elif c.get("p_eur") is not None:
+            total += c["p_eur"] * EUR_TO_USD
+    if "foil" in finishes and c.get("p_usd_foil") is not None:
+        total += c["p_usd_foil"]
+    if "etched" in finishes and c.get("p_usd_etched") is not None:
+        total += c["p_usd_etched"]
+    return total
+
 def meta_from_mtg(s, cards):
-    total_value = sum((c.get("p_usd") or c.get("p_eur") or 0) for c in cards)
+    total_value = sum(mtg_card_total_value(c) for c in cards)
     variant_count = sum(len(c.get("finishes") or []) for c in cards)
     return {
         "game": "mtg",

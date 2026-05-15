@@ -472,6 +472,18 @@ body.game-mtg .constellation .dot.lit { box-shadow: 0 0 6px rgba(26,58,82,0.5); 
   vertical-align: middle;
 }
 .sub-artist { font-style: italic; color: var(--ink-soft); }
+.finish-tag {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--paper);
+  padding: 0 4px;
+  margin-right: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 8px; font-weight: 700;
+  letter-spacing: 0.1em;
+  border-radius: 2px;
+  vertical-align: middle;
+}
 
 .variants { display: flex; gap: 4px; margin-top: 8px; flex-wrap: wrap; }
 .variant-btn {
@@ -928,6 +940,10 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
     <div class="back-bar">
       <button class="back" id="back-btn">← Back to all sets</button>
       <span id="set-breadcrumb"></span>
+      <span style="margin-left:auto; display:flex; gap:10px; align-items:center;">
+        <span id="set-prices-as-of" style="font-family:'JetBrains Mono', monospace; font-size:9px; letter-spacing:0.12em; color:var(--ink-soft); text-transform:uppercase;"></span>
+        <button class="back" id="refresh-prices-btn" style="display:none;">Refresh prices</button>
+      </span>
     </div>
     <div class="set-masthead">
       <div class="ser" id="set-series"></div>
@@ -1313,12 +1329,34 @@ function mtgPrimaryTreatment(c) {
 function mtgPrice(c, variant) {
   if (variant === "foil") return c.p_usd_foil != null ? c.p_usd_foil : null;
   if (variant === "etched") return c.p_usd_etched != null ? c.p_usd_etched : null;
-  return c.p_usd != null ? c.p_usd : null;
+  // nonfoil — fall back to EUR conversion when USD missing
+  if (c.p_usd != null) return c.p_usd;
+  if (c.p_eur != null) return c.p_eur * EUR_TO_USD;
+  return null;
 }
 function mtgCardHeadlinePrice(c) {
-  const vs = mtgVariants(c);
-  const prices = vs.map(v => mtgPrice(c, v)).filter(p => p != null);
-  return prices.length ? Math.min(...prices) : null;
+  // Prefer nonfoil (most common print), then foil, then etched
+  const finishes = c.finishes || [];
+  if (finishes.includes("nonfoil")) {
+    const p = mtgPrice(c, "nonfoil");
+    if (p != null) return p;
+  }
+  if (finishes.includes("foil")) {
+    const p = mtgPrice(c, "foil");
+    if (p != null) return p;
+  }
+  if (finishes.includes("etched")) {
+    const p = mtgPrice(c, "etched");
+    if (p != null) return p;
+  }
+  return null;
+}
+function mtgHeadlineFinish(c) {
+  const finishes = c.finishes || [];
+  if (finishes.includes("nonfoil") && mtgPrice(c, "nonfoil") != null) return "nonfoil";
+  if (finishes.includes("foil") && mtgPrice(c, "foil") != null) return "foil";
+  if (finishes.includes("etched") && mtgPrice(c, "etched") != null) return "etched";
+  return null;
 }
 function mtgFmt(n) {
   if (n == null) return "—";
@@ -1541,6 +1579,17 @@ async function showSetView(game, setId) {
   document.getElementById("set-sub").textContent =
     `${cardCountLabel} cards${variantSuffix} · released ${meta.releaseDate || "—"}`;
 
+  // Staleness indicator + refresh button (MTG only — Scryfall has CORS-open prices)
+  const asOf = currentSetData.fetchedAt ? new Date(currentSetData.fetchedAt) : null;
+  if (asOf) {
+    const days = Math.floor((Date.now() - asOf.getTime()) / 86400000);
+    const dayLabel = days === 0 ? "today" : (days === 1 ? "1 day ago" : `${days} days ago`);
+    document.getElementById("set-prices-as-of").textContent = `Prices · ${dayLabel}`;
+  } else {
+    document.getElementById("set-prices-as-of").textContent = "";
+  }
+  document.getElementById("refresh-prices-btn").style.display = (game === "mtg") ? "" : "none";
+
   renderRarityChips();
   renderTreatmentChips();
   renderGrid();
@@ -1690,7 +1739,14 @@ function renderGrid() {
         <div class="name">${escapeHtml(c.name)}</div>
         <div class="meta">
           <span>${subline}</span>
-          <span class="price">${digital ? "—" : fmtPrice(game, getCardPrice(game, c))}</span>
+          <span class="price">${digital ? "—" : (function() {
+            if (game !== "mtg") return fmtPrice(game, getCardPrice(game, c));
+            const headline = mtgCardHeadlinePrice(c);
+            const finish = mtgHeadlineFinish(c);
+            if (headline == null) return "—";
+            const tag = (finish && finish !== "nonfoil") ? `<span class="finish-tag">${finish === "foil" ? "F" : "E"}</span>` : "";
+            return `${tag}${fmtPrice(game, headline)}`;
+          })()}</span>
         </div>
         <div class="variants">${variantBtns}</div>
       </div>
@@ -1854,16 +1910,25 @@ function renderRawPriceCard(game, c) {
       ? "TCGplayer market (USD) · daily NM avg."
       : "Cardmarket EUR → USD (~1.08×) — NM raw, sleeved";
   } else {
-    // MTG — show nonfoil as primary, foil/etched in range
-    const nm = c.p_usd != null ? c.p_usd : (c.p_usd_foil != null ? c.p_usd_foil : null);
-    valEl.textContent = nm != null ? "$" + nm.toFixed(2) : "—";
+    // MTG — itemized breakdown by finish; the headline value mirrors what the
+    // grid shows (nonfoil → foil → etched priority) so the user sees a single
+    // representative number, then the explicit per-finish prices below.
+    const headline = mtgCardHeadlinePrice(c);
+    const headFin = mtgHeadlineFinish(c);
+    valEl.textContent = headline != null ? "$" + headline.toFixed(2) : "—";
     valEl.classList.remove("muted");
-    const parts = [];
-    if (c.p_usd != null) parts.push(`<span>Nonfoil $${c.p_usd.toFixed(2)}</span>`);
-    if (c.p_usd_foil != null) parts.push(`<span>Foil $${c.p_usd_foil.toFixed(2)}</span>`);
-    if (c.p_usd_etched != null) parts.push(`<span>Etched $${c.p_usd_etched.toFixed(2)}</span>`);
-    rangeEl.innerHTML = parts.join("");
-    metaEl.textContent = "TCGplayer (USD) via Scryfall · NM raw";
+    const lines = [];
+    if (c.p_usd != null) lines.push(`<span>Nonfoil <strong>$${c.p_usd.toFixed(2)}</strong></span>`);
+    else if ((c.finishes || []).includes("nonfoil")) lines.push(`<span>Nonfoil <em style="color:var(--ink-soft);">no data</em></span>`);
+    if (c.p_usd_foil != null) lines.push(`<span>Foil <strong>$${c.p_usd_foil.toFixed(2)}</strong></span>`);
+    else if ((c.finishes || []).includes("foil")) lines.push(`<span>Foil <em style="color:var(--ink-soft);">no data</em></span>`);
+    if (c.p_usd_etched != null) lines.push(`<span>Etched <strong>$${c.p_usd_etched.toFixed(2)}</strong></span>`);
+    else if ((c.finishes || []).includes("etched")) lines.push(`<span>Etched <em style="color:var(--ink-soft);">no data</em></span>`);
+    rangeEl.innerHTML = lines.join("");
+    let metaTxt = "TCGplayer / Scryfall · recent sale avg";
+    if (headFin && headFin !== "nonfoil") metaTxt = `Headline = ${headFin.toUpperCase()} (this printing only exists in foil/etched)`;
+    if (c.p_eur != null && c.p_usd == null) metaTxt = "EUR-only data, converted at 1.08×";
+    metaEl.textContent = metaTxt;
   }
 }
 
@@ -1914,6 +1979,55 @@ document.querySelectorAll("#filter-sort .chip").forEach(c => {
     document.querySelectorAll("#filter-sort .chip").forEach(x => x.classList.toggle("active", x.dataset.sort === setFilters.sort));
     renderGrid();
   });
+});
+
+document.getElementById("refresh-prices-btn").addEventListener("click", async () => {
+  if (!currentSetData || currentSetData.game !== "mtg") return;
+  const btn = document.getElementById("refresh-prices-btn");
+  btn.disabled = true;
+  const origText = btn.textContent;
+  btn.textContent = "Refreshing…";
+  const code = currentSetData.set.code;
+  const byId = {};
+  let url = `https://api.scryfall.com/cards/search?q=${encodeURIComponent("e:" + code)}&unique=prints&order=set&include_extras=false`;
+  let pages = 0, failed = false;
+  try {
+    while (url) {
+      const r = await fetch(url, { headers: { Accept: "application/json" } });
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const data = await r.json();
+      for (const c of (data.data || [])) byId[c.id] = c;
+      url = data.has_more ? data.next_page : null;
+      pages++;
+      // Scryfall asks for 50–100ms between requests
+      if (url) await new Promise(res => setTimeout(res, 110));
+    }
+  } catch (e) {
+    failed = true;
+    toast("Refresh failed: " + e.message);
+  }
+  let updated = 0;
+  if (!failed) {
+    for (const c of currentSetData.cards) {
+      const fresh = byId[c.id];
+      if (!fresh || !fresh.prices) continue;
+      const pp = fresh.prices;
+      const num = v => (v != null && v !== "" ? parseFloat(v) : null);
+      const before = JSON.stringify([c.p_usd, c.p_usd_foil, c.p_usd_etched, c.p_eur]);
+      c.p_usd = num(pp.usd);
+      c.p_usd_foil = num(pp.usd_foil);
+      c.p_usd_etched = num(pp.usd_etched);
+      c.p_eur = num(pp.eur);
+      if (JSON.stringify([c.p_usd, c.p_usd_foil, c.p_usd_etched, c.p_eur]) !== before) updated++;
+    }
+    currentSetData.fetchedAt = new Date().toISOString();
+    document.getElementById("set-prices-as-of").textContent = "Prices · just now";
+    renderGrid();
+    renderStats();
+    toast(`Updated ${updated} prices (${pages} page${pages>1?"s":""})`);
+  }
+  btn.disabled = false;
+  btn.textContent = origText;
 });
 
 document.getElementById("switch-profile-btn").addEventListener("click", () => {

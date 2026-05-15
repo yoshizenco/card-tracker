@@ -516,7 +516,7 @@
    "cardCount": 9,
    "loadedCount": 9,
    "variantCount": 17,
-   "totalValue": 49.99,
+   "totalValue": 99.97,
    "logo": "https://svgs.scryfall.io/sets/msc.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/msc.svg?1778472000",
    "file": "data/mtg/msc.json"
@@ -530,7 +530,7 @@
    "cardCount": 24,
    "loadedCount": 24,
    "variantCount": 46,
-   "totalValue": 767.24,
+   "totalValue": 1974.69,
    "logo": "https://svgs.scryfall.io/sets/msh.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/msh.svg?1778472000",
    "file": "data/mtg/msh.json"
@@ -544,7 +544,7 @@
    "cardCount": 368,
    "loadedCount": 368,
    "variantCount": 734,
-   "totalValue": 658.62,
+   "totalValue": 1547.01,
    "logo": "https://svgs.scryfall.io/sets/sos.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/sos.svg?1778472000",
    "file": "data/mtg/sos.json"
@@ -558,7 +558,7 @@
    "cardCount": 426,
    "loadedCount": 426,
    "variantCount": 436,
-   "totalValue": 476.08,
+   "totalValue": 737.22,
    "logo": "https://svgs.scryfall.io/sets/soc.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/soc.svg?1778472000",
    "file": "data/mtg/soc.json"
@@ -572,7 +572,7 @@
    "cardCount": 320,
    "loadedCount": 320,
    "variantCount": 605,
-   "totalValue": 400.91,
+   "totalValue": 13079.4,
    "logo": "https://svgs.scryfall.io/sets/tmt.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/tmt.svg?1778472000",
    "file": "data/mtg/tmt.json"
@@ -586,7 +586,7 @@
    "cardCount": 408,
    "loadedCount": 408,
    "variantCount": 793,
-   "totalValue": 532.51,
+   "totalValue": 2582.45,
    "logo": "https://svgs.scryfall.io/sets/ecl.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/ecl.svg?1778472000",
    "file": "data/mtg/ecl.json"
@@ -600,7 +600,7 @@
    "cardCount": 176,
    "loadedCount": 176,
    "variantCount": 180,
-   "totalValue": 115.98,
+   "totalValue": 117.56,
    "logo": "https://svgs.scryfall.io/sets/ecc.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/ecc.svg?1778472000",
    "file": "data/mtg/ecc.json"
@@ -614,7 +614,7 @@
    "cardCount": 394,
    "loadedCount": 394,
    "variantCount": 781,
-   "totalValue": 893.83,
+   "totalValue": 7156.53,
    "logo": "https://svgs.scryfall.io/sets/tla.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/tla.svg?1778472000",
    "file": "data/mtg/tla.json"
@@ -628,7 +628,7 @@
    "cardCount": 286,
    "loadedCount": 286,
    "variantCount": 557,
-   "totalValue": 333.27,
+   "totalValue": 4109.72,
    "logo": "https://svgs.scryfall.io/sets/spm.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/spm.svg?1778472000",
    "file": "data/mtg/spm.json"
@@ -656,7 +656,7 @@
    "cardCount": 400,
    "loadedCount": 399,
    "variantCount": 760,
-   "totalValue": 784.42,
+   "totalValue": 4468.64,
    "logo": "https://svgs.scryfall.io/sets/eoe.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/eoe.svg?1778472000",
    "file": "data/mtg/eoe.json"
@@ -670,7 +670,7 @@
    "cardCount": 191,
    "loadedCount": 191,
    "variantCount": 195,
-   "totalValue": 124.96,
+   "totalValue": 126.66,
    "logo": "https://svgs.scryfall.io/sets/eoc.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/eoc.svg?1778472000",
    "file": "data/mtg/eoc.json"
@@ -684,7 +684,7 @@
    "cardCount": 486,
    "loadedCount": 486,
    "variantCount": 937,
-   "totalValue": 1112.7,
+   "totalValue": 5159.69,
    "logo": "https://svgs.scryfall.io/sets/fic.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/fic.svg?1778472000",
    "file": "data/mtg/fic.json"
@@ -698,7 +698,7 @@
    "cardCount": 599,
    "loadedCount": 595,
    "variantCount": 1115,
-   "totalValue": 1757.19,
+   "totalValue": 21161.92,
    "logo": "https://svgs.scryfall.io/sets/fin.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/fin.svg?1778472000",
    "file": "data/mtg/fin.json"
@@ -712,7 +712,7 @@
    "cardCount": 413,
    "loadedCount": 413,
    "variantCount": 423,
-   "totalValue": 449.24,
+   "totalValue": 467.67,
    "logo": "https://svgs.scryfall.io/sets/tdc.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/tdc.svg?1778472000",
    "file": "data/mtg/tdc.json"
@@ -726,7 +726,7 @@
    "cardCount": 427,
    "loadedCount": 427,
    "variantCount": 830,
-   "totalValue": 667.05,
+   "totalValue": 4596.3,
    "logo": "https://svgs.scryfall.io/sets/tdm.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/tdm.svg?1778472000",
    "file": "data/mtg/tdm.json"
@@ -740,7 +740,7 @@
    "cardCount": 553,
    "loadedCount": 553,
    "variantCount": 953,
-   "totalValue": 377.03,
+   "totalValue": 4079.4,
    "logo": "https://svgs.scryfall.io/sets/dft.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/dft.svg?1778472000",
    "file": "data/mtg/dft.json"
@@ -754,7 +754,7 @@
    "cardCount": 184,
    "loadedCount": 184,
    "variantCount": 188,
-   "totalValue": 142.02,
+   "totalValue": 143.42,
    "logo": "https://svgs.scryfall.io/sets/drc.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/drc.svg?1778472000",
    "file": "data/mtg/drc.json"
@@ -768,7 +768,7 @@
    "cardCount": 495,
    "loadedCount": 495,
    "variantCount": 988,
-   "totalValue": 939.02,
+   "totalValue": 4575.78,
    "logo": "https://svgs.scryfall.io/sets/inr.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/inr.svg?1778472000",
    "file": "data/mtg/inr.json"
@@ -796,7 +796,7 @@
    "cardCount": 3,
    "loadedCount": 3,
    "variantCount": 3,
-   "totalValue": 0,
+   "totalValue": 2.49,
    "logo": "https://svgs.scryfall.io/sets/fdc.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/fdc.svg?1778472000",
    "file": "data/mtg/fdc.json"
@@ -810,7 +810,7 @@
    "cardCount": 771,
    "loadedCount": 771,
    "variantCount": 1220,
-   "totalValue": 901.53,
+   "totalValue": 8056.92,
    "logo": "https://svgs.scryfall.io/sets/fdn.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/fdn.svg?1778472000",
    "file": "data/mtg/fdn.json"
@@ -824,7 +824,7 @@
    "cardCount": 419,
    "loadedCount": 419,
    "variantCount": 809,
-   "totalValue": 656.75,
+   "totalValue": 3767.17,
    "logo": "https://svgs.scryfall.io/sets/dsk.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/dsk.svg?1778472000",
    "file": "data/mtg/dsk.json"
@@ -838,7 +838,7 @@
    "cardCount": 373,
    "loadedCount": 373,
    "variantCount": 381,
-   "totalValue": 468.6,
+   "totalValue": 556.78,
    "logo": "https://svgs.scryfall.io/sets/dsc.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/dsc.svg?1778472000",
    "file": "data/mtg/dsc.json"
@@ -852,7 +852,7 @@
    "cardCount": 356,
    "loadedCount": 356,
    "variantCount": 389,
-   "totalValue": 554.37,
+   "totalValue": 4386.28,
    "logo": "https://svgs.scryfall.io/sets/blc.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/blc.svg?1778472000",
    "file": "data/mtg/blc.json"
@@ -866,7 +866,7 @@
    "cardCount": 385,
    "loadedCount": 385,
    "variantCount": 484,
-   "totalValue": 959.97,
+   "totalValue": 5593.63,
    "logo": "https://svgs.scryfall.io/sets/mb2.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/mb2.svg?1778472000",
    "file": "data/mtg/mb2.json"
@@ -880,7 +880,7 @@
    "cardCount": 398,
    "loadedCount": 398,
    "variantCount": 768,
-   "totalValue": 791.36,
+   "totalValue": 4823.33,
    "logo": "https://svgs.scryfall.io/sets/blb.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/blb.svg?1778472000",
    "file": "data/mtg/blb.json"
@@ -894,7 +894,7 @@
    "cardCount": 309,
    "loadedCount": 309,
    "variantCount": 480,
-   "totalValue": 487.99,
+   "totalValue": 3360.57,
    "logo": "https://svgs.scryfall.io/sets/acr.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/acr.svg?1778472000",
    "file": "data/mtg/acr.json"
@@ -908,7 +908,7 @@
    "cardCount": 398,
    "loadedCount": 398,
    "variantCount": 733,
-   "totalValue": 474.97,
+   "totalValue": 694.63,
    "logo": "https://svgs.scryfall.io/sets/m3c.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/m3c.svg?1778472000",
    "file": "data/mtg/m3c.json"
@@ -922,7 +922,7 @@
    "cardCount": 528,
    "loadedCount": 528,
    "variantCount": 995,
-   "totalValue": 1760.54,
+   "totalValue": 5765.95,
    "logo": "https://svgs.scryfall.io/sets/mh3.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/mh3.svg?1778472000",
    "file": "data/mtg/mh3.json"
@@ -936,11 +936,11 @@
    "cardCount": 16,
    "loadedCount": 16,
    "variantCount": 32,
-   "totalValue": 198.42,
+   "totalValue": 481.0,
    "logo": "https://svgs.scryfall.io/sets/mh2.svg?1778472000",
    "symbol": "https://svgs.scryfall.io/sets/mh2.svg?1778472000",
    "file": "data/mtg/h2r.json"
   }
  ],
- "fetchedAt": "2026-05-15T20:59:30Z"
+ "fetchedAt": "2026-05-15T21:06:41Z"
 }
