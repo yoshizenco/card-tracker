@@ -105,14 +105,21 @@ def slim_pkm(c):
     }
 
 EUR_TO_USD = 1.08
+PKM_VARIANT_ORDER = ["normal", "holo", "reverse", "firstEdition", "wPromo"]
+
 def card_usd(c):
     if c.get("usd_market") is not None: return c["usd_market"]
     if c.get("cm_avg") is not None: return c["cm_avg"] * EUR_TO_USD
     if c.get("cm_trend") is not None: return c["cm_trend"] * EUR_TO_USD
     return 0
 
+def pkm_variant_count(c):
+    v = c.get("variants") or {}
+    return sum(1 for k in PKM_VARIANT_ORDER if v.get(k))
+
 def meta_from_pkm(s, cards):
     total_value = sum(card_usd(c) for c in cards)
+    variant_count = sum(pkm_variant_count(c) for c in cards)
     return {
         "game": "pokemon",
         "id": s["id"],
@@ -121,6 +128,7 @@ def meta_from_pkm(s, cards):
         "releaseDate": s.get("releaseDate"),
         "cardCount": s.get("cardCount", {}).get("total") if isinstance(s.get("cardCount"), dict) else None,
         "loadedCount": len(cards),
+        "variantCount": variant_count,
         "totalValue": round(total_value, 2),
         "logo": s.get("logo"),
         "logo_alt": s.get("logo_alt"),
@@ -215,6 +223,7 @@ def slim_mtg(c):
 
 def meta_from_mtg(s, cards):
     total_value = sum((c.get("p_usd") or c.get("p_eur") or 0) for c in cards)
+    variant_count = sum(len(c.get("finishes") or []) for c in cards)
     return {
         "game": "mtg",
         "id": s["code"],
@@ -223,6 +232,7 @@ def meta_from_mtg(s, cards):
         "releaseDate": s.get("released_at"),
         "cardCount": s.get("card_count"),
         "loadedCount": len(cards),
+        "variantCount": variant_count,
         "totalValue": round(total_value, 2),
         "logo": s.get("icon_svg_uri"),
         "symbol": s.get("icon_svg_uri"),

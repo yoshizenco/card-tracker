@@ -939,7 +939,7 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
       <div class="col">
         <div class="label">Collection Progress</div>
         <div class="value"><span id="ld-pct">0</span><span style="font-size:18px;opacity:.6;">%</span></div>
-        <div class="sub"><span id="ld-slots-owned">0</span> of <span id="ld-slots-total">0</span> slots filled</div>
+        <div class="sub"><span id="ld-slots-owned">0</span> of <span id="ld-slots-total">0</span> variants collected</div>
         <div class="constellation" id="constellation"></div>
       </div>
       <div class="col">
@@ -1418,8 +1418,8 @@ function renderPicker() {
     "cards-desc":(a, b) => (b.cardCount || 0) - (a.cardCount || 0),
     "value-desc":(a, b) => (b.totalValue || 0) - (a.totalValue || 0),
     "progress-desc": (a, b) => {
-      const pa = setOwnedSlotsCount(a.game, a.id) / Math.max(1, a.cardCount || 1);
-      const pb = setOwnedSlotsCount(b.game, b.id) / Math.max(1, b.cardCount || 1);
+      const pa = setOwnedSlotsCount(a.game, a.id) / Math.max(1, a.variantCount || a.cardCount || 1);
+      const pb = setOwnedSlotsCount(b.game, b.id) / Math.max(1, b.variantCount || b.cardCount || 1);
       return pb - pa;
     },
   };
@@ -1441,7 +1441,8 @@ function renderPicker() {
   for (const s of sets) {
     const ownedCount = setOwnedSlotsCount(s.game, s.id);
     const cardCount = s.cardCount || 0;
-    const pct = cardCount ? Math.min(100, Math.round((ownedCount / cardCount) * 100)) : 0;
+    const totalVariants = s.variantCount || cardCount || 0;
+    const pct = totalVariants ? Math.min(100, Math.round((ownedCount / totalVariants) * 100)) : 0;
     const tile = document.createElement("div");
     tile.className = "set-tile";
     tile.dataset.setId = s.id;
@@ -1470,7 +1471,7 @@ function renderPicker() {
       <div class="series">${escapeHtml(s.series || "")}</div>
       <div class="stats">
         <div class="stat"><span class="lbl">Cards</span><span class="val">${cardCount.toLocaleString()}</span></div>
-        <div class="stat"><span class="lbl">Owned</span><span class="val">${ownedCount.toLocaleString()}</span></div>
+        <div class="stat"><span class="lbl">Collected</span><span class="val">${ownedCount.toLocaleString()}${s.variantCount ? `<span style="font-size:11px;color:var(--ink-soft);font-weight:400;"> / ${s.variantCount.toLocaleString()}</span>` : ""}</span></div>
         <div class="stat"><span class="lbl">Set Value</span><span class="val">${isDigitalSet(s) ? `<em style="font-style:italic;color:var(--ink-soft);font-weight:400;">Digital</em>` : `${currency}${Math.round(s.totalValue||0).toLocaleString()}`}</span></div>
       </div>
       <div class="progress-bar"><div class="fill" style="width:${pct}%;"></div></div>
@@ -1503,6 +1504,7 @@ async function showSetView(game, setId) {
 
   document.getElementById("set-name").textContent = meta.name || setId;
   document.getElementById("set-series").textContent = `${(meta.series || "").toUpperCase()} · ${meta.id.toUpperCase()}`;
+  // Subtitle: we set this with full variant count below, once the set data loads
   document.getElementById("set-sub").textContent =
     `${(meta.cardCount || 0).toLocaleString()} cards · released ${meta.releaseDate || "—"}`;
   document.getElementById("set-breadcrumb").textContent =
@@ -1529,6 +1531,15 @@ async function showSetView(game, setId) {
     document.getElementById("grid").innerHTML = `<div class="empty">Could not load set data (${escapeHtml(e.message)}).</div>`;
     return;
   }
+
+  // Now that card data is loaded, refresh the subtitle with the variant total
+  const totalVariants = currentSetData.cards.reduce((s, c) => s + getVariants(currentSetData.game, c).length, 0);
+  const cardCountLabel = (meta.cardCount || currentSetData.cards.length).toLocaleString();
+  const variantSuffix = totalVariants !== currentSetData.cards.length
+    ? ` · ${totalVariants.toLocaleString()} variants to collect`
+    : "";
+  document.getElementById("set-sub").textContent =
+    `${cardCountLabel} cards${variantSuffix} · released ${meta.releaseDate || "—"}`;
 
   renderRarityChips();
   renderTreatmentChips();
