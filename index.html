@@ -481,6 +481,103 @@ footer button:hover { background: var(--paper-2); }
 footer .actions { display: flex; gap: 6px; justify-content: center; }
 footer a { color: var(--accent); text-decoration: underline; text-decoration-style: dotted; }
 
+/* ──────────────── PROFILE PICKER ──────────────── */
+.profile-overlay {
+  position: fixed; inset: 0;
+  background: radial-gradient(ellipse at top, #1a0a2a 0%, var(--ink) 70%);
+  display: none; align-items: center; justify-content: center;
+  z-index: 200; padding: 28px;
+}
+.profile-overlay.open { display: flex; }
+.profile-modal {
+  background: var(--paper);
+  border: 1px solid var(--rule);
+  max-width: 720px; width: 100%; padding: 36px 32px;
+  position: relative;
+  box-shadow: 0 30px 80px -20px rgba(0,0,0,0.6);
+}
+.profile-modal::before, .profile-modal::after {
+  content: ""; position: absolute; left: 14px; right: 14px; height: 1px;
+  background: var(--rule); opacity: 0.4;
+}
+.profile-modal::before { top: 10px; }
+.profile-modal::after { bottom: 10px; }
+.profile-modal .pm-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.32em; text-transform: uppercase;
+  color: var(--accent); text-align: center; margin-bottom: 6px;
+}
+.profile-modal h2 {
+  font-family: 'Bodoni Moda', serif; font-weight: 900;
+  font-size: clamp(28px, 5vw, 44px);
+  margin: 0 0 4px; text-align: center;
+  font-variant: small-caps; line-height: 1;
+}
+.profile-modal .pm-sub {
+  font-family: 'Bodoni Moda', serif; font-style: italic;
+  font-size: 14px; color: var(--ink-soft);
+  text-align: center; margin-bottom: 24px;
+}
+.profile-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px;
+}
+.profile-tile {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  padding: 24px 18px;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.profile-tile:hover {
+  transform: translateY(-3px);
+  background: var(--highlight);
+  box-shadow: 0 12px 28px -10px rgba(0,0,0,0.25);
+}
+.profile-tile .pt-initial {
+  font-family: 'Bodoni Moda', serif; font-weight: 900;
+  font-size: 56px; line-height: 1; color: var(--accent);
+  font-variant: small-caps;
+}
+.profile-tile .pt-name {
+  font-family: 'Bodoni Moda', serif; font-weight: 700;
+  font-size: 22px; font-variant: small-caps;
+  letter-spacing: 0.02em;
+}
+.profile-tile .pt-meta {
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-soft);
+}
+.profile-modal .pm-footer {
+  margin-top: 18px;
+  font-family: 'JetBrains Mono', monospace; font-size: 9px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-soft); text-align: center;
+}
+.profile-modal .pm-footer .sync-state.connected { color: var(--moss); }
+.profile-modal .pm-footer .sync-state.offline { color: var(--accent); }
+@media (max-width: 600px) {
+  .profile-grid { grid-template-columns: 1fr; }
+  .profile-tile { padding: 18px; }
+  .profile-tile .pt-initial { font-size: 40px; }
+}
+
+/* Sync indicator pip in header */
+.profile-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.profile-pill .dot-indicator {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--moss);
+  display: inline-block;
+}
+.profile-pill .dot-indicator.offline { background: var(--accent); }
+.profile-pill .dot-indicator.saving { background: var(--gold); animation: pulse 1s linear infinite; }
+
 /* ──────────────── TOAST ──────────────── */
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -534,7 +631,7 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
   letter-spacing: 0.12em; color: var(--ink-soft); text-transform: uppercase; margin-top: 4px;
 }
 
-/* Stacked price cards: Raw NM + PSA 10 */
+/* Single raw NM price card */
 .price-stack { display: grid; gap: 10px; margin-top: 16px; }
 .price-card {
   background: var(--paper-2);
@@ -542,7 +639,6 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
   padding: 12px 14px;
   position: relative;
 }
-.price-card.psa { background: linear-gradient(180deg, #f1eacf 0%, #e2d7b7 100%); }
 .price-card .pc-label {
   font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
   letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft);
@@ -552,92 +648,19 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
   font-size: 8.5px; padding: 2px 6px; border-radius: 2px;
   background: var(--ink); color: var(--paper); letter-spacing: 0.16em;
 }
-.price-card .pc-label .badge.psa-badge { background: var(--accent); }
 .price-card .pc-value {
   font-family: 'Bodoni Moda', serif; font-weight: 900;
   font-size: 28px; line-height: 1.05; margin-top: 2px;
 }
-.price-card .pc-value.muted { color: var(--ink-soft); font-style: italic; font-size: 18px; font-weight: 400; }
 .price-card .pc-range {
   font-family: 'JetBrains Mono', monospace; font-size: 10px;
   letter-spacing: 0.08em; color: var(--ink-soft); margin-top: 6px;
   display: flex; justify-content: space-between; gap: 8px;
 }
-.price-card .pc-link {
-  font-family: 'Bodoni Moda', serif; font-style: italic; font-size: 12px;
-  color: var(--accent); text-decoration: underline; text-decoration-style: dotted;
-  cursor: pointer; background: transparent; border: 0; padding: 0;
-}
 .price-card .pc-meta {
   font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
   letter-spacing: 0.1em; color: var(--ink-soft); margin-top: 4px; text-transform: uppercase;
 }
-.price-card .pc-loading {
-  font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  letter-spacing: 0.16em; color: var(--ink-soft); text-transform: uppercase;
-}
-.price-card .pc-loading::after { content: "▓▒░"; margin-left: 6px; animation: pulse 1.4s linear infinite; display: inline-block; }
-
-/* Settings modal */
-.settings-overlay {
-  position: fixed; inset: 0; background: rgba(20,30,24,0.7);
-  display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px;
-}
-.settings-overlay.open { display: flex; }
-.settings-modal {
-  background: var(--paper); border: 1px solid var(--rule);
-  max-width: 480px; width: 100%; padding: 28px; position: relative;
-  box-shadow: 0 20px 60px -10px rgba(0,0,0,0.5);
-}
-.settings-modal h2 {
-  font-family: 'Bodoni Moda', serif; font-weight: 900;
-  font-size: 28px; margin: 0 0 4px; font-variant: small-caps;
-}
-.settings-modal .sub {
-  font-family: 'Bodoni Moda', serif; font-style: italic;
-  font-size: 13px; color: var(--ink-soft); margin-bottom: 18px;
-}
-.settings-modal .field { margin-bottom: 16px; }
-.settings-modal label {
-  display: block; font-family: 'JetBrains Mono', monospace;
-  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
-  color: var(--ink-soft); margin-bottom: 6px;
-}
-.settings-modal input[type="text"], .settings-modal input[type="password"] {
-  width: 100%; padding: 10px 12px;
-  background: var(--highlight); border: 1px solid var(--rule);
-  font-family: 'JetBrains Mono', monospace; font-size: 12px;
-  color: var(--ink); outline: none;
-}
-.settings-modal input:focus { border-color: var(--accent); }
-.settings-modal .help {
-  font-family: 'Bodoni Moda', serif; font-style: italic;
-  font-size: 12px; color: var(--ink-soft); margin-top: 6px;
-}
-.settings-modal .help a { color: var(--accent); }
-.settings-modal .actions {
-  display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px;
-  padding-top: 14px; border-top: 1px dashed var(--rule);
-}
-.settings-modal .actions button {
-  background: transparent; border: 1px solid var(--rule);
-  padding: 9px 16px; cursor: pointer; color: var(--ink);
-  font-family: 'JetBrains Mono', monospace; font-size: 11px;
-  letter-spacing: 0.12em; text-transform: uppercase;
-}
-.settings-modal .actions button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
-.settings-modal .actions button:hover { opacity: 0.85; }
-.settings-modal .close {
-  position: absolute; top: 12px; right: 14px;
-  background: transparent; border: 0; font-family: 'Bodoni Moda', serif;
-  font-size: 26px; color: var(--ink); cursor: pointer; line-height: 1;
-}
-.settings-modal .key-status {
-  font-family: 'JetBrains Mono', monospace; font-size: 10px;
-  letter-spacing: 0.12em; text-transform: uppercase; margin-top: 6px;
-}
-.settings-modal .key-status.set { color: var(--moss); }
-.settings-modal .key-status.unset { color: var(--ink-soft); }
 
 /* ─── Touch / no-hover: disable hover-lift to prevent stuck states ─── */
 @media (hover: none) {
@@ -805,7 +828,7 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
 
   <!-- ═══════════════════ MASTHEAD ═══════════════════ -->
   <header class="masthead">
-    <div class="left" id="m-left">An Almanac · Vol. I</div>
+    <div class="left" id="m-left"><span class="profile-pill"><span class="dot-indicator" id="sync-dot"></span><span id="profile-name-display">No Profile</span></span></div>
     <div class="center">
       <div class="series-tag">A Collector's Register</div>
       <h1>The Register</h1>
@@ -917,7 +940,7 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
   <footer>
     <div class="left">Pokémon — TCGdex + pokemontcg.io · prices in USD · MTG — Scryfall · TCGplayer USD</div>
     <div class="actions">
-      <button id="settings-btn">Settings</button>
+      <button id="switch-profile-btn">Switch profile</button>
       <button id="reset-btn">Reset Set</button>
       <button id="export-btn">Export</button>
     </div>
@@ -944,15 +967,6 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
           <div class="pc-range" id="d-raw-range"></div>
           <div class="pc-meta" id="d-raw-meta"></div>
         </div>
-
-        <div class="price-card psa" id="d-psa-card">
-          <div class="pc-label">
-            <span>PSA 10 — Gem Mint</span>
-            <span class="badge psa-badge">GRADED</span>
-          </div>
-          <div class="pc-value" id="d-psa-value">—</div>
-          <div class="pc-meta" id="d-psa-meta"></div>
-        </div>
       </div>
 
       <dl id="d-dl" style="margin-top:18px;"></dl>
@@ -964,27 +978,16 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
   </div>
 </div>
 
-<!-- ═══════════════════ SETTINGS ═══════════════════ -->
-<div class="settings-overlay" id="settings-overlay">
-  <div class="settings-modal">
-    <button class="close" id="settings-close" aria-label="Close">×</button>
-    <h2>Settings</h2>
-    <div class="sub">Optional integrations to enrich the price display.</div>
-
-    <div class="field">
-      <label for="ppt-key-input">PokemonPriceTracker.com API key</label>
-      <input type="password" id="ppt-key-input" placeholder="paste your bearer token…" autocomplete="off" />
-      <div class="key-status" id="ppt-key-status">Not set — PSA 10 prices will show as unavailable.</div>
-      <div class="help">
-        With a free key, Pokémon card detail panels show real <strong>PSA 10 Gem Mint</strong> prices.
-        Sign up at <a href="https://www.pokemonpricetracker.com/api" target="_blank" rel="noopener">pokemonpricetracker.com/api</a>
-        (free tier: 100 lookups/day; no card required). Keys stay in your browser — never sent anywhere except the API.
-      </div>
-    </div>
-
-    <div class="actions">
-      <button id="ppt-clear">Clear</button>
-      <button class="primary" id="ppt-save">Save</button>
+<!-- ═══════════════════ PROFILE PICKER ═══════════════════ -->
+<div class="profile-overlay" id="profile-overlay">
+  <div class="profile-modal">
+    <div class="pm-eyebrow">Select your register</div>
+    <h2>Who's collecting?</h2>
+    <div class="pm-sub">Choose your profile to load your saved progress across devices.</div>
+    <div class="profile-grid" id="profile-grid"></div>
+    <div class="pm-footer">
+      <span>Sync state · </span>
+      <span class="sync-state" id="profile-sync-state">checking…</span>
     </div>
   </div>
 </div>
@@ -992,34 +995,154 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
 <div class="toast" id="toast"></div>
 
 <script>
-/* ───────────────────────── STATE ───────────────────────── */
-const STORAGE_KEY = "card-tracker-owned-v2";
-const PPT_KEY_STORAGE = "card-tracker-ppt-key";
-const PSA_CACHE_KEY = "card-tracker-psa-cache-v1";
-const PSA_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
-let owned = loadOwned();
-let manifest = { sets: [] };
-let currentGame = "pokemon";
-let currentSetData = null;   // {set, cards, ...} once loaded
-let pickerState = { sort: "date-desc", q: "" };
-let setFilters = { status: "all", rarity: null, q: "", sort: "default" };
-let psaCache = loadPsaCache();
-function loadPsaCache() {
-  try { return JSON.parse(localStorage.getItem(PSA_CACHE_KEY)) || {}; }
-  catch { return {}; }
-}
-function savePsaCache() { localStorage.setItem(PSA_CACHE_KEY, JSON.stringify(psaCache)); }
-function getPptKey() { return localStorage.getItem(PPT_KEY_STORAGE) || ""; }
-function setPptKey(k) {
-  if (k) localStorage.setItem(PPT_KEY_STORAGE, k);
-  else localStorage.removeItem(PPT_KEY_STORAGE);
+/* ───────────────────────── CONFIG ───────────────────────── */
+const PROFILES = ["Rachel", "Chris", "Roy"];
+const BACKEND_URL = window.CARD_TRACKER_BACKEND || "__BACKEND_URL__";
+const PROFILE_STORAGE_KEY = "card-tracker-profile";
+const LOCAL_FALLBACK_PREFIX = "card-tracker-owned-";  // per-profile localStorage backup
+const SAVE_DEBOUNCE_MS = 600;
+
+let currentProfile = null;
+let backendReachable = false;
+
+function isBackendConfigured() {
+  return BACKEND_URL && !BACKEND_URL.startsWith("__");
 }
 
-function loadOwned() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+/* ───────────────────────── STATE ───────────────────────── */
+let owned = {};
+let manifest = { sets: [] };
+let currentGame = "pokemon";
+let currentSetData = null;
+let pickerState = { sort: "date-desc", q: "" };
+let setFilters = { status: "all", rarity: null, q: "", sort: "default" };
+
+/* Profile-keyed local backup */
+function localKey(profile) { return LOCAL_FALLBACK_PREFIX + profile; }
+function loadLocal(profile) {
+  try { return JSON.parse(localStorage.getItem(localKey(profile))) || {}; }
   catch { return {}; }
 }
-function saveOwned() { localStorage.setItem(STORAGE_KEY, JSON.stringify(owned)); }
+function saveLocal(profile, data) {
+  localStorage.setItem(localKey(profile), JSON.stringify(data));
+}
+
+/* Backend sync */
+async function fetchFromBackend(profile) {
+  if (!isBackendConfigured()) return null;
+  try {
+    const r = await fetch(`${BACKEND_URL}/state/${encodeURIComponent(profile)}`, { cache: "no-store" });
+    if (r.status === 404) return {};   // first time — no saved data
+    if (!r.ok) return null;
+    backendReachable = true;
+    return await r.json();
+  } catch {
+    backendReachable = false;
+    return null;
+  }
+}
+
+let saveTimer = null;
+let isSaving = false;
+async function pushToBackend(profile, data) {
+  if (!isBackendConfigured()) return false;
+  setSyncDot("saving");
+  try {
+    const r = await fetch(`${BACKEND_URL}/state/${encodeURIComponent(profile)}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    backendReachable = true;
+    setSyncDot("connected");
+    return true;
+  } catch (e) {
+    backendReachable = false;
+    setSyncDot("offline");
+    return false;
+  }
+}
+
+function setSyncDot(state) {
+  const dot = document.getElementById("sync-dot");
+  if (!dot) return;
+  dot.classList.remove("offline", "saving");
+  if (state === "offline") dot.classList.add("offline");
+  if (state === "saving") dot.classList.add("saving");
+}
+
+function saveOwned() {
+  if (!currentProfile) return;
+  // Immediate local backup
+  saveLocal(currentProfile, owned);
+  // Debounced backend push
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => pushToBackend(currentProfile, owned), SAVE_DEBOUNCE_MS);
+}
+
+/* Profile picker UI */
+function renderProfileGrid() {
+  const grid = document.getElementById("profile-grid");
+  grid.innerHTML = "";
+  for (const name of PROFILES) {
+    const tile = document.createElement("button");
+    tile.className = "profile-tile";
+    tile.innerHTML = `
+      <div class="pt-initial">${escapeHtml(name[0])}</div>
+      <div class="pt-name">${escapeHtml(name)}</div>
+      <div class="pt-meta">Select to load</div>
+    `;
+    tile.addEventListener("click", () => selectProfile(name));
+    grid.appendChild(tile);
+  }
+
+  // Sync indicator in modal footer
+  const ss = document.getElementById("profile-sync-state");
+  if (!isBackendConfigured()) {
+    ss.textContent = "no backend configured — using device-only storage";
+    ss.className = "sync-state offline";
+  } else {
+    ss.textContent = "checking backend…";
+    fetch(`${BACKEND_URL}/ping`).then(r => {
+      if (r.ok) { ss.textContent = "connected · cross-device sync active"; ss.className = "sync-state connected"; }
+      else throw 0;
+    }).catch(() => { ss.textContent = "backend unreachable — falling back to device-only storage"; ss.className = "sync-state offline"; });
+  }
+}
+
+async function selectProfile(name) {
+  currentProfile = name;
+  localStorage.setItem(PROFILE_STORAGE_KEY, name);
+  document.getElementById("profile-name-display").textContent = name;
+  document.getElementById("profile-overlay").classList.remove("open");
+
+  // Load remote state (or fall back to local)
+  setSyncDot("saving");
+  const remote = await fetchFromBackend(name);
+  if (remote !== null) {
+    owned = remote;
+    // If remote is empty but local has data, push local to remote (first-time migration)
+    if (Object.keys(remote).length === 0 && Object.keys(loadLocal(name)).length > 0) {
+      owned = loadLocal(name);
+      await pushToBackend(name, owned);
+    } else {
+      saveLocal(name, owned);
+    }
+    setSyncDot("connected");
+  } else {
+    owned = loadLocal(name);
+    setSyncDot("offline");
+  }
+  // Re-render whatever is currently showing
+  renderPicker();
+  if (currentSetData) { renderGrid(); renderStats(); }
+}
+
+function showProfilePicker() {
+  renderProfileGrid();
+  document.getElementById("profile-overlay").classList.add("open");
+}
 
 function slotKey(game, setId, cardId, variant) { return `${game}|${setId}|${cardId}|${variant}`; }
 function isOwnedSlot(game, setId, cardId, variant) { return !!owned[slotKey(game, setId, cardId, variant)]; }
@@ -1473,8 +1596,6 @@ function openDetail(c) {
 
   // Raw NM price card
   renderRawPriceCard(game, c);
-  // PSA 10 card (Pokemon only; for MTG show "not commonly graded")
-  renderPSACard(game, c);
 
   const dl = document.getElementById("d-dl");
   const rows = [];
@@ -1538,110 +1659,6 @@ function renderRawPriceCard(game, c) {
   }
 }
 
-/* Render the PSA 10 graded price card */
-async function renderPSACard(game, c) {
-  const valEl = document.getElementById("d-psa-value");
-  const metaEl = document.getElementById("d-psa-meta");
-  const card = document.getElementById("d-psa-card");
-
-  if (game === "mtg") {
-    valEl.textContent = "Not commonly graded";
-    valEl.classList.add("muted");
-    metaEl.textContent = "MTG cards are rarely PSA-graded; raw price reflects market";
-    return;
-  }
-
-  const key = getPptKey();
-  if (!key) {
-    valEl.classList.add("muted");
-    valEl.innerHTML = `<button class="pc-link" id="psa-need-key">Add free API key in Settings →</button>`;
-    metaEl.textContent = "Free at pokemonpricetracker.com — 100 lookups/day";
-    document.getElementById("psa-need-key").addEventListener("click", openSettings);
-    return;
-  }
-
-  // Check cache
-  const cached = psaCache[c.id];
-  const fresh = cached && (Date.now() - cached.t < PSA_CACHE_TTL_MS);
-  if (fresh) {
-    if (cached.psa10 != null) {
-      valEl.textContent = "$" + cached.psa10.toFixed(2);
-      valEl.classList.remove("muted");
-      metaEl.textContent = `PokemonPriceTracker · cached ${Math.round((Date.now()-cached.t)/86400000)}d ago` +
-                          (cached.sales != null ? ` · ${cached.sales} sales tracked` : "");
-    } else {
-      valEl.textContent = "—";
-      valEl.classList.add("muted");
-      metaEl.textContent = "No PSA 10 sales on record";
-    }
-    return;
-  }
-
-  // Fetch live
-  valEl.innerHTML = `<span class="pc-loading">Fetching</span>`;
-  valEl.classList.add("muted");
-  metaEl.textContent = "Querying pokemonpricetracker.com";
-
-  try {
-    const url = `https://www.pokemonpricetracker.com/api/v2/cards?tcgPlayerId=${encodeURIComponent(c.id)}`;
-    const res = await fetch(url, { headers: { Authorization: "Bearer " + key } });
-    if (res.status === 401) {
-      valEl.textContent = "Invalid key";
-      metaEl.textContent = "Update or remove key in Settings";
-      return;
-    }
-    if (res.status === 429) {
-      valEl.textContent = "Rate limit hit";
-      metaEl.textContent = "Free tier exhausted — try again tomorrow";
-      return;
-    }
-    if (!res.ok) throw new Error("HTTP " + res.status);
-    const data = await res.json();
-    // Extract PSA 10 — schema may vary; check common paths
-    let psa10 = null, sales = null;
-    const card = Array.isArray(data?.data) ? data.data[0] : (data?.card || data);
-    if (card) {
-      const grades = card.gradedPrices || card.psa || card.prices?.psa || {};
-      psa10 = grades["10"]?.market ?? grades["10"]?.price ?? grades.psa10 ?? grades.PSA10 ?? card.psa10Price ?? null;
-      if (psa10 == null && Array.isArray(card.gradedPrices)) {
-        const g10 = card.gradedPrices.find(g => String(g.grade) === "10");
-        psa10 = g10?.price ?? g10?.market ?? null;
-      }
-      sales = grades["10"]?.salesCount ?? card.psa10Sales ?? null;
-    }
-    psaCache[c.id] = { t: Date.now(), psa10, sales };
-    savePsaCache();
-    if (psa10 != null) {
-      valEl.textContent = "$" + Number(psa10).toFixed(2);
-      valEl.classList.remove("muted");
-      metaEl.textContent = "PokemonPriceTracker · just fetched" + (sales != null ? ` · ${sales} sales tracked` : "");
-    } else {
-      valEl.textContent = "—";
-      metaEl.textContent = "No PSA 10 sales on record for this card";
-    }
-  } catch (e) {
-    valEl.textContent = "—";
-    metaEl.textContent = "Lookup failed: " + e.message;
-  }
-}
-
-function openSettings() {
-  document.getElementById("ppt-key-input").value = getPptKey();
-  updateKeyStatus();
-  document.getElementById("settings-overlay").classList.add("open");
-}
-function closeSettings() { document.getElementById("settings-overlay").classList.remove("open"); }
-function updateKeyStatus() {
-  const el = document.getElementById("ppt-key-status");
-  if (getPptKey()) {
-    el.textContent = "Key saved — PSA 10 prices enabled.";
-    el.className = "key-status set";
-  } else {
-    el.textContent = "Not set — PSA 10 prices will show as unavailable.";
-    el.className = "key-status unset";
-  }
-}
-
 function closeDetail() { document.getElementById("overlay").classList.remove("open"); }
 document.getElementById("overlay").addEventListener("click", (e) => { if (e.target.id === "overlay") closeDetail(); });
 document.querySelector(".close").addEventListener("click", closeDetail);
@@ -1685,26 +1702,11 @@ document.querySelectorAll("#filter-sort .chip").forEach(c => {
   });
 });
 
-document.getElementById("settings-btn").addEventListener("click", openSettings);
-document.getElementById("settings-close").addEventListener("click", closeSettings);
-document.getElementById("settings-overlay").addEventListener("click", (e) => {
-  if (e.target.id === "settings-overlay") closeSettings();
-});
-document.getElementById("ppt-save").addEventListener("click", () => {
-  const v = document.getElementById("ppt-key-input").value.trim();
-  setPptKey(v);
-  // Clear cached PSA results since key changed
-  psaCache = {}; savePsaCache();
-  updateKeyStatus();
-  toast(v ? "API key saved" : "API key cleared");
-  closeSettings();
-});
-document.getElementById("ppt-clear").addEventListener("click", () => {
-  document.getElementById("ppt-key-input").value = "";
-  setPptKey("");
-  psaCache = {}; savePsaCache();
-  updateKeyStatus();
-  toast("API key cleared");
+document.getElementById("switch-profile-btn").addEventListener("click", () => {
+  // Flush any pending save before switching
+  clearTimeout(saveTimer);
+  if (currentProfile) pushToBackend(currentProfile, owned);
+  showProfilePicker();
 });
 
 document.getElementById("reset-btn").addEventListener("click", () => {
@@ -1745,6 +1747,14 @@ document.getElementById("masthead-date").textContent =
   document.getElementById("pkm-meta").textContent = `${pkmCount} sets`;
   document.getElementById("mtg-meta").textContent = `${mtgCount} sets`;
   document.getElementById("fetched-at").textContent = manifest.fetchedAt ? new Date(manifest.fetchedAt).toLocaleString() : "—";
+
+  // Profile flow: restore saved profile or prompt for selection
+  const saved = localStorage.getItem(PROFILE_STORAGE_KEY);
+  if (saved && PROFILES.includes(saved)) {
+    await selectProfile(saved);
+  } else {
+    showProfilePicker();
+  }
   route();
 })();
 </script>

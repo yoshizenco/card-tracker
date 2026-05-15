@@ -1,0 +1,13 @@
+name = "card-tracker-state"
+main = "src/index.js"
+compatibility_date = "2025-01-01"
+
+# KV namespace for per-profile state. The user must create this binding
+# during first deploy. The script below assumes a binding called STATE.
+#
+# After running `wrangler kv namespace create STATE`, paste the returned
+# `id` value here and uncomment:
+#
+# [[kv_namespaces]]
+# binding = "STATE"
+# id = "<paste-id-here>"
