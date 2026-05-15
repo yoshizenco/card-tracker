@@ -534,6 +534,111 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
   letter-spacing: 0.12em; color: var(--ink-soft); text-transform: uppercase; margin-top: 4px;
 }
 
+/* Stacked price cards: Raw NM + PSA 10 */
+.price-stack { display: grid; gap: 10px; margin-top: 16px; }
+.price-card {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  padding: 12px 14px;
+  position: relative;
+}
+.price-card.psa { background: linear-gradient(180deg, #f1eacf 0%, #e2d7b7 100%); }
+.price-card .pc-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink-soft);
+  margin-bottom: 2px; display: flex; justify-content: space-between; align-items: baseline;
+}
+.price-card .pc-label .badge {
+  font-size: 8.5px; padding: 2px 6px; border-radius: 2px;
+  background: var(--ink); color: var(--paper); letter-spacing: 0.16em;
+}
+.price-card .pc-label .badge.psa-badge { background: var(--accent); }
+.price-card .pc-value {
+  font-family: 'Bodoni Moda', serif; font-weight: 900;
+  font-size: 28px; line-height: 1.05; margin-top: 2px;
+}
+.price-card .pc-value.muted { color: var(--ink-soft); font-style: italic; font-size: 18px; font-weight: 400; }
+.price-card .pc-range {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.08em; color: var(--ink-soft); margin-top: 6px;
+  display: flex; justify-content: space-between; gap: 8px;
+}
+.price-card .pc-link {
+  font-family: 'Bodoni Moda', serif; font-style: italic; font-size: 12px;
+  color: var(--accent); text-decoration: underline; text-decoration-style: dotted;
+  cursor: pointer; background: transparent; border: 0; padding: 0;
+}
+.price-card .pc-meta {
+  font-family: 'JetBrains Mono', monospace; font-size: 9.5px;
+  letter-spacing: 0.1em; color: var(--ink-soft); margin-top: 4px; text-transform: uppercase;
+}
+.price-card .pc-loading {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: 0.16em; color: var(--ink-soft); text-transform: uppercase;
+}
+.price-card .pc-loading::after { content: "▓▒░"; margin-left: 6px; animation: pulse 1.4s linear infinite; display: inline-block; }
+
+/* Settings modal */
+.settings-overlay {
+  position: fixed; inset: 0; background: rgba(20,30,24,0.7);
+  display: none; align-items: center; justify-content: center; z-index: 200; padding: 24px;
+}
+.settings-overlay.open { display: flex; }
+.settings-modal {
+  background: var(--paper); border: 1px solid var(--rule);
+  max-width: 480px; width: 100%; padding: 28px; position: relative;
+  box-shadow: 0 20px 60px -10px rgba(0,0,0,0.5);
+}
+.settings-modal h2 {
+  font-family: 'Bodoni Moda', serif; font-weight: 900;
+  font-size: 28px; margin: 0 0 4px; font-variant: small-caps;
+}
+.settings-modal .sub {
+  font-family: 'Bodoni Moda', serif; font-style: italic;
+  font-size: 13px; color: var(--ink-soft); margin-bottom: 18px;
+}
+.settings-modal .field { margin-bottom: 16px; }
+.settings-modal label {
+  display: block; font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-soft); margin-bottom: 6px;
+}
+.settings-modal input[type="text"], .settings-modal input[type="password"] {
+  width: 100%; padding: 10px 12px;
+  background: var(--highlight); border: 1px solid var(--rule);
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  color: var(--ink); outline: none;
+}
+.settings-modal input:focus { border-color: var(--accent); }
+.settings-modal .help {
+  font-family: 'Bodoni Moda', serif; font-style: italic;
+  font-size: 12px; color: var(--ink-soft); margin-top: 6px;
+}
+.settings-modal .help a { color: var(--accent); }
+.settings-modal .actions {
+  display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px;
+  padding-top: 14px; border-top: 1px dashed var(--rule);
+}
+.settings-modal .actions button {
+  background: transparent; border: 1px solid var(--rule);
+  padding: 9px 16px; cursor: pointer; color: var(--ink);
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: 0.12em; text-transform: uppercase;
+}
+.settings-modal .actions button.primary { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.settings-modal .actions button:hover { opacity: 0.85; }
+.settings-modal .close {
+  position: absolute; top: 12px; right: 14px;
+  background: transparent; border: 0; font-family: 'Bodoni Moda', serif;
+  font-size: 26px; color: var(--ink); cursor: pointer; line-height: 1;
+}
+.settings-modal .key-status {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.12em; text-transform: uppercase; margin-top: 6px;
+}
+.settings-modal .key-status.set { color: var(--moss); }
+.settings-modal .key-status.unset { color: var(--ink-soft); }
+
 /* ─── Touch / no-hover: disable hover-lift to prevent stuck states ─── */
 @media (hover: none) {
   .set-tile:hover, .entry:hover .plate { transform: none; box-shadow: none; }
@@ -812,6 +917,7 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
   <footer>
     <div class="left">Pokémon — TCGdex + pokemontcg.io · prices in USD · MTG — Scryfall · TCGplayer USD</div>
     <div class="actions">
+      <button id="settings-btn">Settings</button>
       <button id="reset-btn">Reset Set</button>
       <button id="export-btn">Export</button>
     </div>
@@ -827,15 +933,58 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
     <div class="right-pane">
       <div class="num" id="d-num"></div>
       <h2 id="d-name"></h2>
-      <div class="price-block">
-        <div class="big" id="d-price"></div>
-        <div class="src" id="d-price-src">market avg.</div>
+
+      <div class="price-stack">
+        <div class="price-card">
+          <div class="pc-label">
+            <span>Near-mint, ungraded</span>
+            <span class="badge">RAW</span>
+          </div>
+          <div class="pc-value" id="d-raw-value">—</div>
+          <div class="pc-range" id="d-raw-range"></div>
+          <div class="pc-meta" id="d-raw-meta"></div>
+        </div>
+
+        <div class="price-card psa" id="d-psa-card">
+          <div class="pc-label">
+            <span>PSA 10 — Gem Mint</span>
+            <span class="badge psa-badge">GRADED</span>
+          </div>
+          <div class="pc-value" id="d-psa-value">—</div>
+          <div class="pc-meta" id="d-psa-meta"></div>
+        </div>
       </div>
-      <dl id="d-dl"></dl>
+
+      <dl id="d-dl" style="margin-top:18px;"></dl>
       <div class="variant-block">
         <div class="label">Variants to Collect</div>
         <div class="variants" id="d-variants"></div>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SETTINGS ═══════════════════ -->
+<div class="settings-overlay" id="settings-overlay">
+  <div class="settings-modal">
+    <button class="close" id="settings-close" aria-label="Close">×</button>
+    <h2>Settings</h2>
+    <div class="sub">Optional integrations to enrich the price display.</div>
+
+    <div class="field">
+      <label for="ppt-key-input">PokemonPriceTracker.com API key</label>
+      <input type="password" id="ppt-key-input" placeholder="paste your bearer token…" autocomplete="off" />
+      <div class="key-status" id="ppt-key-status">Not set — PSA 10 prices will show as unavailable.</div>
+      <div class="help">
+        With a free key, Pokémon card detail panels show real <strong>PSA 10 Gem Mint</strong> prices.
+        Sign up at <a href="https://www.pokemonpricetracker.com/api" target="_blank" rel="noopener">pokemonpricetracker.com/api</a>
+        (free tier: 100 lookups/day; no card required). Keys stay in your browser — never sent anywhere except the API.
+      </div>
+    </div>
+
+    <div class="actions">
+      <button id="ppt-clear">Clear</button>
+      <button class="primary" id="ppt-save">Save</button>
     </div>
   </div>
 </div>
@@ -845,12 +994,26 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
 <script>
 /* ───────────────────────── STATE ───────────────────────── */
 const STORAGE_KEY = "card-tracker-owned-v2";
+const PPT_KEY_STORAGE = "card-tracker-ppt-key";
+const PSA_CACHE_KEY = "card-tracker-psa-cache-v1";
+const PSA_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 let owned = loadOwned();
 let manifest = { sets: [] };
 let currentGame = "pokemon";
 let currentSetData = null;   // {set, cards, ...} once loaded
 let pickerState = { sort: "date-desc", q: "" };
 let setFilters = { status: "all", rarity: null, q: "", sort: "default" };
+let psaCache = loadPsaCache();
+function loadPsaCache() {
+  try { return JSON.parse(localStorage.getItem(PSA_CACHE_KEY)) || {}; }
+  catch { return {}; }
+}
+function savePsaCache() { localStorage.setItem(PSA_CACHE_KEY, JSON.stringify(psaCache)); }
+function getPptKey() { return localStorage.getItem(PPT_KEY_STORAGE) || ""; }
+function setPptKey(k) {
+  if (k) localStorage.setItem(PPT_KEY_STORAGE, k);
+  else localStorage.removeItem(PPT_KEY_STORAGE);
+}
 
 function loadOwned() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
@@ -1301,11 +1464,17 @@ function openDetail(c) {
   const game = currentSetData.game;
   const setId = currentSetData.setId;
   const img = getCardImage(game, c, "high") || getCardImage(game, c, "large") || c.image;
-  document.getElementById("d-img").src = img;
+  const imgEl = document.getElementById("d-img");
+  imgEl.src = img || "";
+  imgEl.onerror = () => { imgEl.style.display = "none"; };
+  imgEl.style.display = img ? "" : "none";
   document.getElementById("d-name").textContent = c.name;
   document.getElementById("d-num").textContent = `№${getCardNumber(game, c)} · ${c.rarity || ""}`;
-  document.getElementById("d-price").textContent = fmtPrice(game, getCardPrice(game, c));
-  document.getElementById("d-price-src").textContent = game === "pokemon" ? (c.usd_market != null ? "TCGplayer market (USD)" : "Cardmarket EUR → USD est.") : "TCGplayer cheapest finish";
+
+  // Raw NM price card
+  renderRawPriceCard(game, c);
+  // PSA 10 card (Pokemon only; for MTG show "not commonly graded")
+  renderPSACard(game, c);
 
   const dl = document.getElementById("d-dl");
   const rows = [];
@@ -1314,15 +1483,10 @@ function openDetail(c) {
   rows.push(["Illustrator", getCardArtist(game, c) || "—"]);
   rows.push(["Set Code", c.id]);
   if (game === "pokemon") {
-    if (c.usd_market != null) rows.push(["TCGplayer USD", "$" + c.usd_market.toFixed(2)]);
     const lo = c.cm_low != null ? "€" + c.cm_low.toFixed(2) : "—";
     const tr = c.cm_trend != null ? "€" + c.cm_trend.toFixed(2) : "—";
     rows.push(["EUR Low / Trend", `${lo} / ${tr}`]);
   } else {
-    if (c.p_usd != null) rows.push(["Nonfoil", "$" + c.p_usd.toFixed(2)]);
-    if (c.p_usd_foil != null) rows.push(["Foil", "$" + c.p_usd_foil.toFixed(2)]);
-    if (c.p_usd_etched != null) rows.push(["Etched", "$" + c.p_usd_etched.toFixed(2)]);
-    if (c.p_eur != null) rows.push(["EUR", "€" + c.p_eur.toFixed(2)]);
     if (c.scryfall_uri) rows.push(["Scryfall", `<a href="${escapeHtml(c.scryfall_uri)}" target="_blank">view</a>`]);
   }
   dl.innerHTML = rows.map(([k, v]) => `<dt>${escapeHtml(k)}</dt><dd>${v.startsWith && v.startsWith("<") ? v : escapeHtml(v)}</dd>`).join("");
@@ -1341,6 +1505,143 @@ function openDetail(c) {
   }
   document.getElementById("overlay").classList.add("open");
 }
+/* Render the Raw NM (near-mint) price card */
+function renderRawPriceCard(game, c) {
+  const valEl = document.getElementById("d-raw-value");
+  const rangeEl = document.getElementById("d-raw-range");
+  const metaEl = document.getElementById("d-raw-meta");
+  if (game === "pokemon") {
+    const market = c.usd_market != null ? c.usd_market
+                  : (c.cm_avg != null ? c.cm_avg * EUR_TO_USD : null);
+    valEl.textContent = market != null ? "$" + market.toFixed(2) : "—";
+    valEl.classList.remove("muted");
+    rangeEl.innerHTML = "";
+    if (c.cm_low != null || c.cm_trend != null) {
+      const lo = c.cm_low != null ? "$" + (c.cm_low * EUR_TO_USD).toFixed(2) : "—";
+      const tr = c.cm_trend != null ? "$" + (c.cm_trend * EUR_TO_USD).toFixed(2) : "—";
+      rangeEl.innerHTML = `<span>Floor ${lo}</span><span>Trend ${tr}</span>`;
+    }
+    metaEl.textContent = c.usd_market != null
+      ? "TCGplayer market (USD) · daily NM avg."
+      : "Cardmarket EUR → USD (~1.08×) — NM raw, sleeved";
+  } else {
+    // MTG — show nonfoil as primary, foil/etched in range
+    const nm = c.p_usd != null ? c.p_usd : (c.p_usd_foil != null ? c.p_usd_foil : null);
+    valEl.textContent = nm != null ? "$" + nm.toFixed(2) : "—";
+    valEl.classList.remove("muted");
+    const parts = [];
+    if (c.p_usd != null) parts.push(`<span>Nonfoil $${c.p_usd.toFixed(2)}</span>`);
+    if (c.p_usd_foil != null) parts.push(`<span>Foil $${c.p_usd_foil.toFixed(2)}</span>`);
+    if (c.p_usd_etched != null) parts.push(`<span>Etched $${c.p_usd_etched.toFixed(2)}</span>`);
+    rangeEl.innerHTML = parts.join("");
+    metaEl.textContent = "TCGplayer (USD) via Scryfall · NM raw";
+  }
+}
+
+/* Render the PSA 10 graded price card */
+async function renderPSACard(game, c) {
+  const valEl = document.getElementById("d-psa-value");
+  const metaEl = document.getElementById("d-psa-meta");
+  const card = document.getElementById("d-psa-card");
+
+  if (game === "mtg") {
+    valEl.textContent = "Not commonly graded";
+    valEl.classList.add("muted");
+    metaEl.textContent = "MTG cards are rarely PSA-graded; raw price reflects market";
+    return;
+  }
+
+  const key = getPptKey();
+  if (!key) {
+    valEl.classList.add("muted");
+    valEl.innerHTML = `<button class="pc-link" id="psa-need-key">Add free API key in Settings →</button>`;
+    metaEl.textContent = "Free at pokemonpricetracker.com — 100 lookups/day";
+    document.getElementById("psa-need-key").addEventListener("click", openSettings);
+    return;
+  }
+
+  // Check cache
+  const cached = psaCache[c.id];
+  const fresh = cached && (Date.now() - cached.t < PSA_CACHE_TTL_MS);
+  if (fresh) {
+    if (cached.psa10 != null) {
+      valEl.textContent = "$" + cached.psa10.toFixed(2);
+      valEl.classList.remove("muted");
+      metaEl.textContent = `PokemonPriceTracker · cached ${Math.round((Date.now()-cached.t)/86400000)}d ago` +
+                          (cached.sales != null ? ` · ${cached.sales} sales tracked` : "");
+    } else {
+      valEl.textContent = "—";
+      valEl.classList.add("muted");
+      metaEl.textContent = "No PSA 10 sales on record";
+    }
+    return;
+  }
+
+  // Fetch live
+  valEl.innerHTML = `<span class="pc-loading">Fetching</span>`;
+  valEl.classList.add("muted");
+  metaEl.textContent = "Querying pokemonpricetracker.com";
+
+  try {
+    const url = `https://www.pokemonpricetracker.com/api/v2/cards?tcgPlayerId=${encodeURIComponent(c.id)}`;
+    const res = await fetch(url, { headers: { Authorization: "Bearer " + key } });
+    if (res.status === 401) {
+      valEl.textContent = "Invalid key";
+      metaEl.textContent = "Update or remove key in Settings";
+      return;
+    }
+    if (res.status === 429) {
+      valEl.textContent = "Rate limit hit";
+      metaEl.textContent = "Free tier exhausted — try again tomorrow";
+      return;
+    }
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    // Extract PSA 10 — schema may vary; check common paths
+    let psa10 = null, sales = null;
+    const card = Array.isArray(data?.data) ? data.data[0] : (data?.card || data);
+    if (card) {
+      const grades = card.gradedPrices || card.psa || card.prices?.psa || {};
+      psa10 = grades["10"]?.market ?? grades["10"]?.price ?? grades.psa10 ?? grades.PSA10 ?? card.psa10Price ?? null;
+      if (psa10 == null && Array.isArray(card.gradedPrices)) {
+        const g10 = card.gradedPrices.find(g => String(g.grade) === "10");
+        psa10 = g10?.price ?? g10?.market ?? null;
+      }
+      sales = grades["10"]?.salesCount ?? card.psa10Sales ?? null;
+    }
+    psaCache[c.id] = { t: Date.now(), psa10, sales };
+    savePsaCache();
+    if (psa10 != null) {
+      valEl.textContent = "$" + Number(psa10).toFixed(2);
+      valEl.classList.remove("muted");
+      metaEl.textContent = "PokemonPriceTracker · just fetched" + (sales != null ? ` · ${sales} sales tracked` : "");
+    } else {
+      valEl.textContent = "—";
+      metaEl.textContent = "No PSA 10 sales on record for this card";
+    }
+  } catch (e) {
+    valEl.textContent = "—";
+    metaEl.textContent = "Lookup failed: " + e.message;
+  }
+}
+
+function openSettings() {
+  document.getElementById("ppt-key-input").value = getPptKey();
+  updateKeyStatus();
+  document.getElementById("settings-overlay").classList.add("open");
+}
+function closeSettings() { document.getElementById("settings-overlay").classList.remove("open"); }
+function updateKeyStatus() {
+  const el = document.getElementById("ppt-key-status");
+  if (getPptKey()) {
+    el.textContent = "Key saved — PSA 10 prices enabled.";
+    el.className = "key-status set";
+  } else {
+    el.textContent = "Not set — PSA 10 prices will show as unavailable.";
+    el.className = "key-status unset";
+  }
+}
+
 function closeDetail() { document.getElementById("overlay").classList.remove("open"); }
 document.getElementById("overlay").addEventListener("click", (e) => { if (e.target.id === "overlay") closeDetail(); });
 document.querySelector(".close").addEventListener("click", closeDetail);
@@ -1382,6 +1683,28 @@ document.querySelectorAll("#filter-sort .chip").forEach(c => {
     document.querySelectorAll("#filter-sort .chip").forEach(x => x.classList.toggle("active", x.dataset.sort === setFilters.sort));
     renderGrid();
   });
+});
+
+document.getElementById("settings-btn").addEventListener("click", openSettings);
+document.getElementById("settings-close").addEventListener("click", closeSettings);
+document.getElementById("settings-overlay").addEventListener("click", (e) => {
+  if (e.target.id === "settings-overlay") closeSettings();
+});
+document.getElementById("ppt-save").addEventListener("click", () => {
+  const v = document.getElementById("ppt-key-input").value.trim();
+  setPptKey(v);
+  // Clear cached PSA results since key changed
+  psaCache = {}; savePsaCache();
+  updateKeyStatus();
+  toast(v ? "API key saved" : "API key cleared");
+  closeSettings();
+});
+document.getElementById("ppt-clear").addEventListener("click", () => {
+  document.getElementById("ppt-key-input").value = "";
+  setPptKey("");
+  psaCache = {}; savePsaCache();
+  updateKeyStatus();
+  toast("API key cleared");
 });
 
 document.getElementById("reset-btn").addEventListener("click", () => {
