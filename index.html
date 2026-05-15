@@ -187,6 +187,32 @@ body.game-mtg { --accent: var(--accent-mtg); }
   font-family: 'JetBrains Mono', monospace; font-size: 10px;
   letter-spacing: 0.16em; color: var(--accent);
 }
+.set-tile .tile-track {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 30px; height: 30px;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2;
+  color: var(--ink-soft);
+  padding: 0;
+  border-radius: 50%;
+  transition: background 0.15s, color 0.15s, transform 0.15s;
+}
+.set-tile .tile-track:hover { background: var(--highlight); color: var(--accent); transform: scale(1.05); }
+.set-tile .tile-track.tracked { color: var(--accent); }
+.set-tile .tile-track svg { display: block; }
+.set-tile.tracked { box-shadow: inset 0 0 0 1px var(--accent); }
+.set-tile.tracked::before {
+  content: "TRACKING";
+  position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+  background: var(--accent); color: var(--paper);
+  padding: 1px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+}
 .set-tile .logo-wrap {
   height: 70px; display: flex; align-items: center; justify-content: center;
   padding: 4px 0;
@@ -867,6 +893,10 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2"/></svg>
         <input id="picker-search" type="text" placeholder="Search sets by name…" autocomplete="off" />
       </div>
+      <div class="chips" id="picker-filter">
+        <button class="chip active" data-tracked="all">All sets</button>
+        <button class="chip" data-tracked="tracked">★ Tracked only <span class="count" id="tracked-count">0</span></button>
+      </div>
       <div class="chips" id="picker-sort">
         <button class="chip active" data-sort="date-desc">Newest</button>
         <button class="chip" data-sort="date-asc">Oldest</button>
@@ -1011,11 +1041,36 @@ function isBackendConfigured() {
 
 /* ───────────────────────── STATE ───────────────────────── */
 let owned = {};
+let tracking = {};   // { "game|setId": true } — which sets the user is actively collecting
 let manifest = { sets: [] };
 let currentGame = "pokemon";
 let currentSetData = null;
-let pickerState = { sort: "date-desc", q: "" };
+let pickerState = { sort: "date-desc", q: "", trackedOnly: false };
 let setFilters = { status: "all", rarity: null, q: "", sort: "default" };
+
+function trackKey(game, setId) { return `${game}|${setId}`; }
+function isTracked(game, setId) { return !!tracking[trackKey(game, setId)]; }
+function hasAnyTracked(game) {
+  const prefix = `${game}|`;
+  return Object.keys(tracking).some(k => k.startsWith(prefix));
+}
+function toggleTracked(game, setId) {
+  const k = trackKey(game, setId);
+  if (tracking[k]) delete tracking[k]; else tracking[k] = true;
+  saveOwned();   // shared save flushes both owned + tracking
+}
+
+/* Normalize stored payload into {owned, tracking} */
+function normalizeState(raw) {
+  if (raw && typeof raw === "object" && (raw.owned || raw.tracking)) {
+    return { owned: raw.owned || {}, tracking: raw.tracking || {} };
+  }
+  // Legacy: payload was the flat owned blob
+  return { owned: raw || {}, tracking: {} };
+}
+function currentPayload() {
+  return { owned, tracking };
+}
 
 /* Profile-keyed local backup */
 function localKey(profile) { return LOCAL_FALLBACK_PREFIX + profile; }
@@ -1074,11 +1129,12 @@ function setSyncDot(state) {
 
 function saveOwned() {
   if (!currentProfile) return;
+  const payload = currentPayload();
   // Immediate local backup
-  saveLocal(currentProfile, owned);
+  saveLocal(currentProfile, payload);
   // Debounced backend push
   clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => pushToBackend(currentProfile, owned), SAVE_DEBOUNCE_MS);
+  saveTimer = setTimeout(() => pushToBackend(currentProfile, payload), SAVE_DEBOUNCE_MS);
 }
 
 /* Profile picker UI */
@@ -1120,21 +1176,30 @@ async function selectProfile(name) {
   // Load remote state (or fall back to local)
   setSyncDot("saving");
   const remote = await fetchFromBackend(name);
+  let state;
   if (remote !== null) {
-    owned = remote;
+    state = normalizeState(remote);
     // If remote is empty but local has data, push local to remote (first-time migration)
-    if (Object.keys(remote).length === 0 && Object.keys(loadLocal(name)).length > 0) {
-      owned = loadLocal(name);
-      await pushToBackend(name, owned);
+    const localRaw = loadLocal(name);
+    const remoteEmpty = Object.keys(state.owned).length === 0 && Object.keys(state.tracking).length === 0;
+    const localHasData = localRaw && Object.keys(localRaw).length > 0;
+    if (remoteEmpty && localHasData) {
+      state = normalizeState(localRaw);
+      await pushToBackend(name, state);
     } else {
-      saveLocal(name, owned);
+      saveLocal(name, state);
     }
     setSyncDot("connected");
   } else {
-    owned = loadLocal(name);
+    state = normalizeState(loadLocal(name));
     setSyncDot("offline");
   }
-  // Re-render whatever is currently showing
+  owned = state.owned;
+  tracking = state.tracking;
+
+  // Auto-enable tracked-only view if the user has any tracked sets
+  pickerState.trackedOnly = hasAnyTracked(currentGame);
+
   renderPicker();
   if (currentSetData) { renderGrid(); renderStats(); }
 }
@@ -1252,6 +1317,11 @@ async function route() {
     t.classList.toggle("active", t.dataset.game === currentGame);
   });
 
+  // If switching to a game with no tracked sets, fall back to "All sets" view
+  if (pickerState.trackedOnly && !hasAnyTracked(currentGame)) {
+    pickerState.trackedOnly = false;
+  }
+
   if (setId) {
     await showSetView(currentGame, setId);
   } else {
@@ -1277,8 +1347,18 @@ function setOwnedSlotsCount(game, setId) {
 function renderPicker() {
   const grid = document.getElementById("set-grid");
   grid.innerHTML = "";
+
+  // Update tracked count and filter chip state
+  const trackedCountForGame = manifest.sets.filter(s => s.game === currentGame && isTracked(s.game, s.id)).length;
+  const tcEl = document.getElementById("tracked-count");
+  if (tcEl) tcEl.textContent = trackedCountForGame;
+  document.querySelectorAll("#picker-filter .chip").forEach(c => {
+    c.classList.toggle("active", c.dataset.tracked === (pickerState.trackedOnly ? "tracked" : "all"));
+  });
+
   const sets = manifest.sets
     .filter(s => s.game === currentGame)
+    .filter(s => !pickerState.trackedOnly || isTracked(s.game, s.id))
     .filter(s => !pickerState.q || s.name.toLowerCase().includes(pickerState.q.toLowerCase()) ||
                  (s.series || "").toLowerCase().includes(pickerState.q.toLowerCase()));
 
@@ -1301,7 +1381,9 @@ function renderPicker() {
   if (!sets.length) {
     const e = document.createElement("div");
     e.className = "empty";
-    e.textContent = "No sets match your search.";
+    e.textContent = pickerState.trackedOnly
+      ? "No sets tracked yet. Switch to “All sets” and star the ones you're collecting."
+      : "No sets match your search.";
     grid.appendChild(e);
     return;
   }
@@ -1321,7 +1403,12 @@ function renderPicker() {
         <div class="lp-name">${escapeHtml(s.name)}</div>
         <div class="lp-sub">${escapeHtml(s.series || s.id)}</div>
       </div>`;
+    const tracked = isTracked(s.game, s.id);
+    if (tracked) tile.classList.add("tracked");
+    const starFilled = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>`;
+    const starOutline = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87L18.18 22 12 18.56 5.82 22 7 14.14l-5-4.87 6.91-1.01L12 2z"/></svg>`;
     tile.innerHTML = `
+      <button class="tile-track ${tracked ? 'tracked' : ''}" data-track-set="${escapeHtml(s.id)}" title="${tracked ? 'Stop tracking this set' : 'Track this set'}" aria-label="Toggle tracking">${tracked ? starFilled : starOutline}</button>
       <span class="tile-num">${escapeHtml(s.id.toUpperCase())}</span>
       <span class="tile-date">${escapeHtml(dateStr)}</span>
       <div class="logo-wrap">
@@ -1338,7 +1425,17 @@ function renderPicker() {
       </div>
       <div class="progress-bar"><div class="fill" style="width:${pct}%;"></div></div>
     `;
-    tile.addEventListener("click", () => setHash(currentGame, s.id));
+    tile.addEventListener("click", (e) => {
+      // Star button has its own handler
+      if (e.target.closest(".tile-track")) return;
+      setHash(currentGame, s.id);
+    });
+    const starBtn = tile.querySelector(".tile-track");
+    starBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      toggleTracked(s.game, s.id);
+      renderPicker();
+    });
     grid.appendChild(tile);
   }
 }
@@ -1679,6 +1776,12 @@ document.querySelectorAll("#picker-sort .chip").forEach(c => {
   c.addEventListener("click", () => {
     pickerState.sort = c.dataset.sort;
     document.querySelectorAll("#picker-sort .chip").forEach(x => x.classList.toggle("active", x.dataset.sort === pickerState.sort));
+    renderPicker();
+  });
+});
+document.querySelectorAll("#picker-filter .chip").forEach(c => {
+  c.addEventListener("click", () => {
+    pickerState.trackedOnly = c.dataset.tracked === "tracked";
     renderPicker();
   });
 });
