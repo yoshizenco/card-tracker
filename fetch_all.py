@@ -19,7 +19,7 @@ DATA = ROOT / "data"
 
 CUTOFF = "2024-05-15"
 UA = {
-    "User-Agent": "PerfectOrderTracker/1.0 (https://yoshizenco.github.io/perfect-order-tracker)",
+    "User-Agent": "CardTracker/1.0 (https://yoshizenco.github.io/card-tracker)",
     "Accept": "application/json,*/*",
 }
 
