@@ -1,0 +1,5 @@
+{
+  "_comment": "Rename to gist-config.json (or copy) and fill in the values to use GitHub Gist as the backend instead of Cloudflare. See BACKEND.md for full setup instructions.",
+  "gist_id": "paste-gist-id-here-32-chars-hex",
+  "pat": "github_pat_..."
+}

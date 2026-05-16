@@ -5,3 +5,5 @@ __pycache__/
 worker/node_modules/
 worker/.wrangler/
 worker/.dev.vars
+# Gist config holds a GitHub PAT — never commit
+gist-config.json

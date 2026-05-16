@@ -1059,6 +1059,9 @@ footer a { color: var(--accent); text-decoration: underline; text-decoration-sty
 /* ───────────────────────── CONFIG ───────────────────────── */
 const PROFILES = ["Rachel", "Chris", "Roy"];
 const BACKEND_URL = window.CARD_TRACKER_BACKEND || "__BACKEND_URL__";
+// Gist mode: build.py replaces these when `gist-config.json` is present
+const GIST_ID = window.CARD_TRACKER_GIST_ID || "__GIST_ID__";
+const GIST_PAT = window.CARD_TRACKER_GIST_PAT || "__GIST_PAT__";
 const PROFILE_STORAGE_KEY = "card-tracker-profile";
 const LOCAL_FALLBACK_PREFIX = "card-tracker-owned-";  // per-profile localStorage backup
 const SAVE_DEBOUNCE_MS = 600;
@@ -1066,8 +1069,17 @@ const SAVE_DEBOUNCE_MS = 600;
 let currentProfile = null;
 let backendReachable = false;
 
-function isBackendConfigured() {
+function gistConfigured() {
+  return GIST_ID && !GIST_ID.startsWith("__") && GIST_PAT && !GIST_PAT.startsWith("__");
+}
+function cloudflareConfigured() {
   return BACKEND_URL && !BACKEND_URL.startsWith("__");
+}
+function isBackendConfigured() {
+  return gistConfigured() || cloudflareConfigured();
+}
+function backendKind() {
+  return gistConfigured() ? "gist" : (cloudflareConfigured() ? "cloudflare" : "none");
 }
 
 /* ───────────────────────── STATE ───────────────────────── */
@@ -1113,12 +1125,26 @@ function saveLocal(profile, data) {
   localStorage.setItem(localKey(profile), JSON.stringify(data));
 }
 
-/* Backend sync */
+/* Backend sync — dispatches to whichever adapter is configured */
 async function fetchFromBackend(profile) {
-  if (!isBackendConfigured()) return null;
+  if (gistConfigured()) return fetchFromGist(profile);
+  if (cloudflareConfigured()) return fetchFromCloudflare(profile);
+  return null;
+}
+
+let saveTimer = null;
+let isSaving = false;
+async function pushToBackend(profile, data) {
+  if (gistConfigured()) return pushToGist(profile, data);
+  if (cloudflareConfigured()) return pushToCloudflare(profile, data);
+  return false;
+}
+
+/* ── Cloudflare Worker adapter ── */
+async function fetchFromCloudflare(profile) {
   try {
     const r = await fetch(`${BACKEND_URL}/state/${encodeURIComponent(profile)}`, { cache: "no-store" });
-    if (r.status === 404) return {};   // first time — no saved data
+    if (r.status === 404) return {};
     if (!r.ok) return null;
     backendReachable = true;
     return await r.json();
@@ -1127,11 +1153,7 @@ async function fetchFromBackend(profile) {
     return null;
   }
 }
-
-let saveTimer = null;
-let isSaving = false;
-async function pushToBackend(profile, data) {
-  if (!isBackendConfigured()) return false;
+async function pushToCloudflare(profile, data) {
   setSyncDot("saving");
   try {
     const r = await fetch(`${BACKEND_URL}/state/${encodeURIComponent(profile)}`, {
@@ -1143,7 +1165,61 @@ async function pushToBackend(profile, data) {
     backendReachable = true;
     setSyncDot("connected");
     return true;
-  } catch (e) {
+  } catch {
+    backendReachable = false;
+    setSyncDot("offline");
+    return false;
+  }
+}
+
+/* ── GitHub Gist adapter ── */
+// Reads are unauthenticated (works for both public + secret gists if you know the id).
+// Writes need the PAT — fine-grained PAT with "Gists: Read and write" works.
+function gistFileName(profile) { return `${profile}.json`; }
+async function fetchFromGist(profile) {
+  try {
+    const r = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      cache: "no-store",
+      headers: { Accept: "application/vnd.github+json" },
+    });
+    if (!r.ok) {
+      backendReachable = false;
+      return null;
+    }
+    const gist = await r.json();
+    const file = (gist.files || {})[gistFileName(profile)];
+    backendReachable = true;
+    if (!file) return {};
+    let content = file.content;
+    // Big files arrive truncated — fall back to raw_url
+    if (file.truncated && file.raw_url) {
+      const rr = await fetch(file.raw_url, { cache: "no-store" });
+      content = await rr.text();
+    }
+    try { return JSON.parse(content || "{}"); } catch { return {}; }
+  } catch {
+    backendReachable = false;
+    return null;
+  }
+}
+async function pushToGist(profile, data) {
+  setSyncDot("saving");
+  try {
+    const body = { files: { [gistFileName(profile)]: { content: JSON.stringify(data) } } };
+    const r = await fetch(`https://api.github.com/gists/${GIST_ID}`, {
+      method: "PATCH",
+      headers: {
+        "Authorization": "Bearer " + GIST_PAT,
+        "Accept": "application/vnd.github+json",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    backendReachable = true;
+    setSyncDot("connected");
+    return true;
+  } catch {
     backendReachable = false;
     setSyncDot("offline");
     return false;
@@ -1189,10 +1265,16 @@ function renderProfileGrid() {
   if (!isBackendConfigured()) {
     ss.textContent = "no backend configured — using device-only storage";
     ss.className = "sync-state offline";
+  } else if (gistConfigured()) {
+    ss.textContent = "checking GitHub Gist…";
+    fetch(`https://api.github.com/gists/${GIST_ID}`).then(r => {
+      if (r.ok) { ss.textContent = "connected · GitHub Gist (cross-device sync active)"; ss.className = "sync-state connected"; }
+      else throw 0;
+    }).catch(() => { ss.textContent = "gist unreachable — falling back to device-only storage"; ss.className = "sync-state offline"; });
   } else {
-    ss.textContent = "checking backend…";
+    ss.textContent = "checking Cloudflare Worker…";
     fetch(`${BACKEND_URL}/ping`).then(r => {
-      if (r.ok) { ss.textContent = "connected · cross-device sync active"; ss.className = "sync-state connected"; }
+      if (r.ok) { ss.textContent = "connected · Cloudflare (cross-device sync active)"; ss.className = "sync-state connected"; }
       else throw 0;
     }).catch(() => { ss.textContent = "backend unreachable — falling back to device-only storage"; ss.className = "sync-state offline"; });
   }
