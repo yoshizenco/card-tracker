@@ -101,24 +101,64 @@ def slim_pkm(c):
         "rarity": c.get("rarity"), "category": c.get("category"),
         "illustrator": c.get("illustrator"),
         "variants": c.get("variants") or {},
+        # Cardmarket fields — avg/low/trend track the "base" print (non-foil for cards with a normal print, the holo for cards with only a holo print).
+        # avg-holo/low-holo/trend-holo track the holographic / reverse-holo variant when one exists.
         "cm_avg": cm.get("avg"), "cm_low": cm.get("low"), "cm_trend": cm.get("trend"),
+        "cm_avg_holo": cm.get("avg-holo"), "cm_low_holo": cm.get("low-holo"), "cm_trend_holo": cm.get("trend-holo"),
     }
 
 EUR_TO_USD = 1.08
 PKM_VARIANT_ORDER = ["normal", "holo", "reverse", "firstEdition", "wPromo"]
 
-def card_usd(c):
-    if c.get("usd_market") is not None: return c["usd_market"]
-    if c.get("cm_avg") is not None: return c["cm_avg"] * EUR_TO_USD
-    if c.get("cm_trend") is not None: return c["cm_trend"] * EUR_TO_USD
-    return 0
-
 def pkm_variant_count(c):
     v = c.get("variants") or {}
     return sum(1 for k in PKM_VARIANT_ORDER if v.get(k))
 
+def pkm_variant_price_usd(c, variant):
+    """USD price for a specific Pokemon variant.
+
+    Precedence: per-variant TCGplayer USD (when pokemontcg.io covers the set) →
+    TCGdex Cardmarket EUR→USD per variant.
+    """
+    # 1. Per-variant USD from pokemontcg.io (enrich_pokemon.py output)
+    usd_prices = c.get("usd_prices") or {}
+    PKMTCG_KEYS = {
+        "normal": ["normal"],
+        "holo": ["holofoil", "unlimitedHolofoil"],
+        "reverse": ["reverseHolofoil"],
+        "firstEdition": ["1stEditionHolofoil", "1stEditionNormal"],
+        "wPromo": [],
+    }
+    for key in PKMTCG_KEYS.get(variant, []):
+        if usd_prices.get(key) is not None:
+            return float(usd_prices[key])
+
+    # 2. TCGdex Cardmarket: avg = non-holo (= normal); avg-holo = holo variant (= reverse for low-rarity, or the only holo print)
+    if variant in ("normal", "firstEdition", "wPromo"):
+        if c.get("cm_avg") is not None: return c["cm_avg"] * EUR_TO_USD
+    elif variant == "reverse":
+        if c.get("cm_avg_holo") is not None: return c["cm_avg_holo"] * EUR_TO_USD
+        # fall back to base price if no holo data
+        if c.get("cm_avg") is not None: return c["cm_avg"] * EUR_TO_USD
+    elif variant == "holo":
+        # Cards with only a holo variant store the holo price in cm_avg, not cm_avg_holo
+        v = c.get("variants") or {}
+        if not v.get("normal") and not v.get("reverse"):
+            if c.get("cm_avg") is not None: return c["cm_avg"] * EUR_TO_USD
+        if c.get("cm_avg_holo") is not None: return c["cm_avg_holo"] * EUR_TO_USD
+        if c.get("cm_avg") is not None: return c["cm_avg"] * EUR_TO_USD
+
+    # 3. Last-resort fallback: legacy single price
+    if c.get("usd_market") is not None: return c["usd_market"]
+    return 0
+
+def pkm_card_total_value(c):
+    """Sum of every priced variant — master-set value for one card."""
+    v = c.get("variants") or {}
+    return sum(pkm_variant_price_usd(c, k) for k in PKM_VARIANT_ORDER if v.get(k))
+
 def meta_from_pkm(s, cards):
-    total_value = sum(card_usd(c) for c in cards)
+    total_value = sum(pkm_card_total_value(c) for c in cards)
     variant_count = sum(pkm_variant_count(c) for c in cards)
     return {
         "game": "pokemon",

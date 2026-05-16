@@ -1276,11 +1276,56 @@ function pkmVariants(c) {
   return PKM_VARIANT_ORDER.filter(k => v[k]);
 }
 const EUR_TO_USD = 1.08;
-function pkmPrice(c) {
-  // Prefer real TCGplayer USD; fall back to converting Cardmarket EUR
+
+// pokemontcg.io TCGplayer key for each TCGdex variant key
+const PKM_USD_KEYS = {
+  normal: ["normal"],
+  holo: ["holofoil", "unlimitedHolofoil"],
+  reverse: ["reverseHolofoil"],
+  firstEdition: ["1stEditionHolofoil", "1stEditionNormal"],
+  wPromo: [],
+};
+
+/** Per-variant USD price. Precedence:
+ *  1. pokemontcg.io TCGplayer USD (when the set is covered)
+ *  2. TCGdex Cardmarket per-variant (avg = non-holo, avg-holo = holo/reverse), converted EUR→USD
+ *  3. Legacy single-price fallbacks
+ */
+function pkmPrice(c, variant) {
+  const tcg = c.usd_prices || {};
+  for (const key of (PKM_USD_KEYS[variant] || [])) {
+    if (tcg[key] != null) return tcg[key];
+  }
+  const v = c.variants || {};
+  if (variant === "normal" || variant === "firstEdition" || variant === "wPromo") {
+    if (c.cm_avg != null) return c.cm_avg * EUR_TO_USD;
+  } else if (variant === "reverse") {
+    if (c.cm_avg_holo != null) return c.cm_avg_holo * EUR_TO_USD;
+    if (c.cm_avg != null) return c.cm_avg * EUR_TO_USD;
+  } else if (variant === "holo") {
+    // When the card is holo-only, the holo price is in cm_avg (no normal print exists)
+    if (!v.normal && !v.reverse && c.cm_avg != null) return c.cm_avg * EUR_TO_USD;
+    if (c.cm_avg_holo != null) return c.cm_avg_holo * EUR_TO_USD;
+    if (c.cm_avg != null) return c.cm_avg * EUR_TO_USD;
+  }
+  if (c.usd_market != null) return c.usd_market;
+  return 0;
+}
+
+/** Headline (representative) price for a card across variants — used by the picker tile / grid card. */
+function pkmCardHeadlinePrice(c) {
+  // Prefer the first available variant in normal → holo → reverse order
+  const order = ["normal", "holo", "reverse", "firstEdition", "wPromo"];
+  const variants = pkmVariants(c);
+  for (const v of order) {
+    if (variants.includes(v)) {
+      const p = pkmPrice(c, v);
+      if (p && p > 0) return p;
+    }
+  }
+  // Last-ditch fallbacks
   if (c.usd_market != null) return c.usd_market;
   if (c.cm_avg != null) return c.cm_avg * EUR_TO_USD;
-  if (c.cm_trend != null) return c.cm_trend * EUR_TO_USD;
   return 0;
 }
 function pkmFmt(n) {
@@ -1373,7 +1418,7 @@ function getCardImage(game, c, size) {
 function getCardId(game, c) { return c.id; }
 function getCardNumber(game, c) { return game === "pokemon" ? c.localId : c.collector_number; }
 function getCardPrice(game, c) {
-  if (game === "pokemon") return pkmPrice(c);
+  if (game === "pokemon") return pkmCardHeadlinePrice(c);
   return mtgCardHeadlinePrice(c) || 0;
 }
 function fmtPrice(game, n) { return game === "pokemon" ? pkmFmt(n) : mtgFmt(n); }
@@ -1381,7 +1426,7 @@ function getCardArtist(game, c) { return game === "pokemon" ? c.illustrator : c.
 function getCardCategory(game, c) { return game === "pokemon" ? c.category : c.type_line; }
 
 function getVariantPrice(game, c, variant) {
-  if (game === "pokemon") return pkmPrice(c);
+  if (game === "pokemon") return pkmPrice(c, variant);
   return mtgPrice(c, variant);
 }
 
@@ -1790,27 +1835,13 @@ function renderStats() {
     ownedSlots += ownedFlags.filter(Boolean).length;
     if (ownedFlags.some(Boolean)) cardsOwned++;
 
-    if (game === "mtg") {
-      // sum prices of owned variants (each finish has its own price)
-      variants.forEach((v, i) => {
-        const p = mtgPrice(c, v);
-        if (p == null) return;
-        if (ownedFlags[i]) valueOwned += p;
-        else valueMissing += p;
-      });
-    } else {
-      const p = pkmPrice(c);
-      if (variants.length === 0) return;
-      if (ownedFlags.every(Boolean)) valueOwned += p;
-      else if (ownedFlags.some(Boolean)) {
-        const have = ownedFlags.filter(Boolean).length;
-        const portion = p * (have / variants.length);
-        valueOwned += portion;
-        valueMissing += p - portion;
-      } else {
-        valueMissing += p;
-      }
-    }
+    // Per-variant pricing for both games now — sum each variant's actual price.
+    variants.forEach((v, i) => {
+      const p = getVariantPrice(game, c, v);
+      if (p == null || p === 0) return;
+      if (ownedFlags[i]) valueOwned += p;
+      else valueMissing += p;
+    });
   }
 
   const pct = totalSlots ? Math.round((ownedSlots / totalSlots) * 100) : 0;
@@ -1896,19 +1927,26 @@ function renderRawPriceCard(game, c) {
   const rangeEl = document.getElementById("d-raw-range");
   const metaEl = document.getElementById("d-raw-meta");
   if (game === "pokemon") {
-    const market = c.usd_market != null ? c.usd_market
-                  : (c.cm_avg != null ? c.cm_avg * EUR_TO_USD : null);
-    valEl.textContent = market != null ? "$" + market.toFixed(2) : "—";
+    const headline = pkmCardHeadlinePrice(c);
+    valEl.textContent = headline > 0 ? "$" + headline.toFixed(2) : "—";
     valEl.classList.remove("muted");
-    rangeEl.innerHTML = "";
-    if (c.cm_low != null || c.cm_trend != null) {
-      const lo = c.cm_low != null ? "$" + (c.cm_low * EUR_TO_USD).toFixed(2) : "—";
-      const tr = c.cm_trend != null ? "$" + (c.cm_trend * EUR_TO_USD).toFixed(2) : "—";
-      rangeEl.innerHTML = `<span>Floor ${lo}</span><span>Trend ${tr}</span>`;
+    // Per-variant breakdown
+    const lines = [];
+    const variants = pkmVariants(c);
+    const hasTcg = c.usd_prices && Object.keys(c.usd_prices).length > 0;
+    for (const v of variants) {
+      const p = pkmPrice(c, v);
+      const label = PKM_VARIANT_LABEL[v];
+      if (p > 0) {
+        lines.push(`<span>${escapeHtml(label)} <strong>$${p.toFixed(2)}</strong></span>`);
+      } else {
+        lines.push(`<span>${escapeHtml(label)} <em style="color:var(--ink-soft);">—</em></span>`);
+      }
     }
-    metaEl.textContent = c.usd_market != null
-      ? "TCGplayer market (USD) · daily NM avg."
-      : "Cardmarket EUR → USD (~1.08×) — NM raw, sleeved";
+    rangeEl.innerHTML = lines.join("");
+    metaEl.textContent = hasTcg
+      ? "TCGplayer market (USD) per variant · daily NM avg."
+      : "Cardmarket EUR → USD (~1.08×) per variant — NM raw, sleeved";
   } else {
     // MTG — itemized breakdown by finish; the headline value mirrors what the
     // grid shows (nonfoil → foil → etched priority) so the user sees a single

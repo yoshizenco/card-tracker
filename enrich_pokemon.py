@@ -26,17 +26,25 @@ def pkmtcg_id_for_name(name):
     """Find pokemontcg.io set ID for a given TCGdex set name."""
     return PKMTCG_BY_NAME.get(name.lower())
 
-def market_usd(prices_obj):
-    """Pick the highest-variant TCGplayer market USD from a card."""
-    if not prices_obj: return None
-    # Prefer holofoil > normal > others
-    for v in ("holofoil","normal","reverseHolofoil","1stEditionHolofoil","1stEditionNormal","unlimitedHolofoil"):
-        if prices_obj.get(v, {}).get("market") is not None:
-            return prices_obj[v]["market"]
-    # Fallback: any variant's market
-    for v, p in prices_obj.items():
-        if p.get("market") is not None: return p["market"]
-    return None
+PKMTCG_VARIANTS = ("normal", "holofoil", "reverseHolofoil",
+                   "1stEditionNormal", "1stEditionHolofoil", "unlimitedHolofoil")
+
+def all_market_usd(prices_obj):
+    """Return {variant_key: market_usd} for every TCGplayer variant that has a price."""
+    if not prices_obj: return {}
+    out = {}
+    for v in PKMTCG_VARIANTS:
+        m = (prices_obj.get(v) or {}).get("market")
+        if m is not None:
+            out[v] = float(m)
+    return out
+
+def headline_market_usd(prices_obj):
+    """Pick a single representative USD market price (used for the legacy usd_market field)."""
+    p = all_market_usd(prices_obj)
+    for v in ("normal", "holofoil", "reverseHolofoil", "1stEditionHolofoil", "1stEditionNormal", "unlimitedHolofoil"):
+        if v in p: return p[v]
+    return next(iter(p.values()), None)
 
 print("Listing pokemontcg.io sets…")
 all_sets = get("https://api.pokemontcg.io/v2/sets?pageSize=250")["data"]
@@ -69,13 +77,18 @@ for f in local_files:
         if len(r["data"]) < 250: break
         page += 1
 
-    # Build {collector_number → market_usd, image_url} lookup
+    # Build {collector_number → {usd, usd_prices, image_small}} lookup
     by_num = {}
     for c in cards_pkmtcg:
         num = str(c.get("number","")).strip()
-        usd = market_usd((c.get("tcgplayer") or {}).get("prices"))
+        prices_obj = (c.get("tcgplayer") or {}).get("prices") or {}
+        all_prices = all_market_usd(prices_obj)
         img_small = (c.get("images") or {}).get("small")
-        by_num[num] = {"usd": usd, "image_small": img_small}
+        by_num[num] = {
+            "usd": headline_market_usd(prices_obj),
+            "usd_prices": all_prices,
+            "image_small": img_small,
+        }
 
     enriched_count = 0
     img_filled = 0
@@ -87,6 +100,8 @@ for f in local_files:
         if match_p["usd"] is not None:
             card["usd_market"] = match_p["usd"]
             enriched_count += 1
+        if match_p.get("usd_prices"):
+            card["usd_prices"] = match_p["usd_prices"]
         if not card.get("image") and match_p.get("image_small"):
             # Save pokemontcg.io image URL as alt
             card["image_alt"] = match_p["image_small"]
